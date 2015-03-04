@@ -51,8 +51,8 @@ Point start, end;
 
 void drawBox(Point start, Point end, Mat& img){
 	imshow("set",img);
-	Scalar color = (0,255,0);
-	rectangle(img, start, end, color, 1, 8, 0);
+	Scalar color = (255,0,0);
+	rectangle(img, start, end, color, 10, 8, 0);
 	return;
 }
 
@@ -163,47 +163,55 @@ int main()
 		return false;
 	}
 	
+
+	cout << "click and drag on image to select reference size\n";
+	cout << "press c to continue\n";
 	char kb = 0;	
 	namedWindow("set",1);
+	
+	Image tmpImage;
+	Image rgbTmp;
+	cv::Mat tmp;
 	while(kb != 'c'){
-		if (kb != 'f'){
-			Image tmpImage;
-			Error error = camera.RetrieveBuffer(&tmpImage);
-			if (error != PGRERROR_OK){
-				std::cout<< "capture error" << std::endl;
-				return false;
-			}
+		Error error = camera.RetrieveBuffer(&tmpImage);
+		if (error != PGRERROR_OK){
+			std::cout<< "capture error" << std::endl;
+			return false;
+		}
 
-			Image rgbTmp;
-			tmpImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &rgbTmp);
-	
-			unsigned int rowBytes = (double)rgbTmp.GetReceivedDataSize()/(double)rgbTmp.GetRows();
+		tmpImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &rgbTmp);
 
-			cv::Mat tmp = cv::Mat(rgbTmp.GetRows(),rgbTmp.GetCols(),CV_8UC3,rgbTmp.GetData(),rowBytes);
+		unsigned int rowBytes = (double)rgbTmp.GetReceivedDataSize()/(double)rgbTmp.GetRows();
+
+		tmp = cv::Mat(rgbTmp.GetRows(),rgbTmp.GetCols(),CV_8UC3,rgbTmp.GetData(),rowBytes);
 	
+		imshow("set",tmp);
+	
+	        cvSetMouseCallback("set", mouseEvent, &tmp);
+		if (coordinates[3] != '\0'){
+			drawBox(start, end, tmp);
 			imshow("set",tmp);
-	
-		        cvSetMouseCallback("set", mouseEvent, &tmp); 
-			kb = cvWaitKey(30);
 		}
-		// check if image already frozen, don't reset!
-		if (kb == 'f'){
-			kb = cvWaitKey(30);
-			if(kb == '\0' | kb == 'f'){
-				cout << "working";
-				kb='f';
-			}
+		kb = cvWaitKey(30);
+	}
+	if (coordinates[0] == 0 and coordinates[1] == 0){
+		coordinates[0] = 0;
+		coordinates[1] = 0;
+		coordinates[2] = tmp.cols;
+		coordinates[3] = tmp.rows;
+	}
+	else{
+		if (coordinates[0] > coordinates[2]){
+			int hold = coordinates[0];
+			coordinates[0] = coordinates[2]+coordinates[0];
+			coordinates[2] = hold+coordinates[0];
 		}
-		else{
-			kb = cvWaitKey(30);
-		}	
+		if (coordinates[1] > coordinates[3]){
+			int hold = coordinates[1];
+			coordinates[1] = coordinates[3]+coordinates[1];
+			coordinates[3] = hold+coordinates[1];
+		}
 	}
-	// debug
-	for( int i = 0; i < 4; i=i+1 ){
-		cout << coordinates[i];
-		cout << " ";
-	}
-	
 	//double fps = cap.get(CV_CAP_PROP_FPS);
 	int dp = 1;
 	//int min_dist = sqrt( pow(tmp.rows,2) + pow(tmp.cols,2));
