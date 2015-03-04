@@ -17,7 +17,6 @@ using namespace std;
 
 
 Vec<int,4> coordinates;
-int fix_frame = 0;
 
 int min_dist_slider_max = 100;
 int min_dist_slider;
@@ -51,10 +50,9 @@ bool isDrawing = false;
 Point start, end;
 
 void drawBox(Point start, Point end, Mat& img){
-
+	imshow("set",img);
 	Scalar color = (0,255,0);
 	rectangle(img, start, end, color, 1, 8, 0);
-	imshow("set", img);
 	return;
 }
 
@@ -76,7 +74,7 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		if(evt==CV_EVENT_LBUTTONDOWN){
 	        	printf("down %d %d\n",x,y);
 		        isDrawing = true;
-		        start.x = x;
+			start.x = x;
 		        start.y = y;
 			coordinates[0] = start.x;
 			coordinates[1] = start.y;
@@ -167,35 +165,45 @@ int main()
 	
 	char kb = 0;	
 	namedWindow("set",1);
-	
-	cout << fix_frame;
 	while(kb != 'c'){
-		Image tmpImage;
-		Error error = camera.RetrieveBuffer(&tmpImage);
-		if (error != PGRERROR_OK){
-			std::cout<< "capture error" << std::endl;
-			return false;
+		if (kb != 'f'){
+			Image tmpImage;
+			Error error = camera.RetrieveBuffer(&tmpImage);
+			if (error != PGRERROR_OK){
+				std::cout<< "capture error" << std::endl;
+				return false;
+			}
+
+			Image rgbTmp;
+			tmpImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &rgbTmp);
+	
+			unsigned int rowBytes = (double)rgbTmp.GetReceivedDataSize()/(double)rgbTmp.GetRows();
+
+			cv::Mat tmp = cv::Mat(rgbTmp.GetRows(),rgbTmp.GetCols(),CV_8UC3,rgbTmp.GetData(),rowBytes);
+	
+			imshow("set",tmp);
+	
+		        cvSetMouseCallback("set", mouseEvent, &tmp); 
+			kb = cvWaitKey(30);
 		}
-	
-		Image rgbTmp;
-		tmpImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &rgbTmp);
-	
-		unsigned int rowBytes = (double)rgbTmp.GetReceivedDataSize()/(double)rgbTmp.GetRows();
-
-		cv::Mat tmp = cv::Mat(rgbTmp.GetRows(),rgbTmp.GetCols(),CV_8UC3,rgbTmp.GetData(),rowBytes);
-	
-		imshow("set",tmp);
-	        cvSetMouseCallback("set", mouseEvent, &tmp); 
-	
-
-		kb = cvWaitKey(30);	
+		// check if image already frozen, don't reset!
+		if (kb == 'f'){
+			kb = cvWaitKey(30);
+			if(kb == '\0' | kb == 'f'){
+				cout << "working";
+				kb='f';
+			}
+		}
+		else{
+			kb = cvWaitKey(30);
+		}	
 	}
 	// debug
 	for( int i = 0; i < 4; i=i+1 ){
 		cout << coordinates[i];
 		cout << " ";
 	}
-
+	
 	//double fps = cap.get(CV_CAP_PROP_FPS);
 	int dp = 1;
 	//int min_dist = sqrt( pow(tmp.rows,2) + pow(tmp.cols,2));
@@ -228,11 +236,6 @@ int main()
 	//char key = 0;
 	bool refresh = true;
 	
-	//VideoWriter demo;
-	//int ex = static_cast<int>(cap.get(CV_CAP_PROP_FOURCC));
-	//cout << ex;
-	//Size S = Size((int) cap.get(CV_CAP_PROP_FRAME_WIDTH), (int) cap.get(CV_CAP_PROP_FRAME_HEIGHT));
-	//demo.open("eye-tracking-demo.avi",ex,15,S,true);
 	
 	// make sliders
 	createTrackbar("Min Distance", "filtered", &min_dist_slider,min_dist_slider_max,min_dist_trackbar);
@@ -253,13 +256,12 @@ int main()
 			std::cout << "capture error" << std::endl;
 			continue;
 		}
-
+		
 		Image rgbImage;
 		rawImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &rgbImage);
 		// convert to OpenCV Mat
 		unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();
-		cv::Mat image = cv::Mat(rgbImage.GetRows(), rgbImage.GetCols(),CV_8UC3, rgbImage.GetData(),rowBytes);
-
+		Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(),CV_8UC3, rgbImage.GetData(),rowBytes);
 
 		//Mat image;
 		//Mat i1, i2;
@@ -278,13 +280,10 @@ int main()
 		Mat image_gray;
 		image_gray = image(myROI);
 
-		//medianBlur(image_gray, image_gray, 75);		
 		cvtColor( image_gray, image_gray, CV_BGR2GRAY);
 		medianBlur(image_gray,image_gray,med_blur);
 		
-		
 
-		//image_gray.convertTo( image_gray, -1, 3, 0);
 		threshold(image_gray, image_gray, bin_threshold, 255, THRESH_BINARY);
 		GaussianBlur( image_gray, image_gray, Size(9, 9), 2, 2);
 		vector<Vec3f> circles;
@@ -320,12 +319,10 @@ int main()
 		else{
 			cout << "eye-blink";
 		}	
-		//demo.write(image);
 		
 		imshow("window",image);
 		imshow("filtered",image_gray);
-		key = waitKey(10);
-	return 0;
+		key = waitKey(30);
 	}
 	
 }

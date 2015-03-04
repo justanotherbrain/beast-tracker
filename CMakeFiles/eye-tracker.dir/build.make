@@ -31,6 +31,9 @@ CMAKE_COMMAND = /usr/bin/cmake
 # The command to remove a file.
 RM = /usr/bin/cmake -E remove -f
 
+# Escaping for special characters.
+EQUALS = =
+
 # The top-level source directory on which CMake was run.
 CMAKE_SOURCE_DIR = /home/bijanadmin/git/eye-tracker
 
@@ -77,25 +80,27 @@ eye__tracker_OBJECTS = \
 eye__tracker_EXTERNAL_OBJECTS =
 
 eye-tracker: CMakeFiles/eye-tracker.dir/eye-tracker.cpp.o
-eye-tracker: /usr/local/lib/libopencv_videostab.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_video.so.2.4.10
+eye-tracker: CMakeFiles/eye-tracker.dir/build.make
+eye-tracker: /usr/local/lib/libopencv_viz.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_videostab.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_video.so.2.4.9
 eye-tracker: /usr/local/lib/libopencv_ts.a
-eye-tracker: /usr/local/lib/libopencv_superres.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_stitching.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_photo.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_ocl.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_objdetect.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_nonfree.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_ml.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_legacy.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_imgproc.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_highgui.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_gpu.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_flann.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_features2d.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_core.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_contrib.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_calib3d.so.2.4.10
+eye-tracker: /usr/local/lib/libopencv_superres.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_stitching.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_photo.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_ocl.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_objdetect.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_nonfree.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_ml.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_legacy.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_imgproc.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_highgui.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_gpu.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_flann.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_features2d.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_core.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_contrib.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_calib3d.so.2.4.9
 eye-tracker: /usr/lib/libflycapture.so
 eye-tracker: /usr/lib/x86_64-linux-gnu/libGLU.so
 eye-tracker: /usr/lib/x86_64-linux-gnu/libGL.so
@@ -103,21 +108,20 @@ eye-tracker: /usr/lib/x86_64-linux-gnu/libSM.so
 eye-tracker: /usr/lib/x86_64-linux-gnu/libICE.so
 eye-tracker: /usr/lib/x86_64-linux-gnu/libX11.so
 eye-tracker: /usr/lib/x86_64-linux-gnu/libXext.so
-eye-tracker: /usr/local/lib/libopencv_nonfree.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_ocl.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_gpu.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_photo.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_objdetect.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_legacy.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_video.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_ml.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_calib3d.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_features2d.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_highgui.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_imgproc.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_flann.so.2.4.10
-eye-tracker: /usr/local/lib/libopencv_core.so.2.4.10
-eye-tracker: CMakeFiles/eye-tracker.dir/build.make
+eye-tracker: /usr/local/lib/libopencv_nonfree.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_ocl.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_gpu.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_photo.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_objdetect.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_legacy.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_video.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_ml.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_calib3d.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_features2d.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_highgui.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_imgproc.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_flann.so.2.4.9
+eye-tracker: /usr/local/lib/libopencv_core.so.2.4.9
 eye-tracker: CMakeFiles/eye-tracker.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --red --bold "Linking CXX executable eye-tracker"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/eye-tracker.dir/link.txt --verbose=$(VERBOSE)
