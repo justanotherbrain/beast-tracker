@@ -5,6 +5,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <string>
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
@@ -48,6 +50,17 @@ int bin_threshold;
 
 bool isDrawing = false;
 Point start, end;
+
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    strftime(buf, sizeof(buf), "%Y-%m-%d-%H%M%S", &tstruct);
+
+    return buf;
+}
+
 
 void drawBox(Point start, Point end, Mat& img){
 	imshow("set",img);
@@ -132,6 +145,23 @@ void bin_threshold_trackbar(int,void*){
 
 int main()
 {
+	// save file
+	cout << "Choose a file name to save to. Defaults to current date and time... \n \n";
+	
+	string input = "";
+	string filename;
+	getline(cin, input);
+	if (input == ""){
+		filename = currentDateTime();
+	}
+	else{
+		filename = input;
+	}
+	filename.append(".csv");
+	const char *fn = filename.c_str();
+	
+	ofstream save_file (fn);
+
 	Error error;
 	Camera camera;
 	CameraInfo camInfo;
@@ -303,6 +333,8 @@ int main()
 		float x=0;
 		float y=0;
 		float r=0;
+		float centerX;
+		float centerY;
 		if (circles.size()>0){
 			for( size_t i=0; i< circles.size(); i++)
 			{
@@ -311,8 +343,8 @@ int main()
 				r=r+circles[i][2];
 			}
 		
-			float centerX=x/circles.size()+offset[0];
-			float centerY=y/circles.size()+offset[1];
+			centerX=cvFloor(x/circles.size()+offset[0]);
+			centerY=cvFloor(y/circles.size()+offset[1]);
 			//float centerX=circles[0][0]+offset[0];
 			//float centerY=circles[0][1]+offset[1];	
 		
@@ -328,9 +360,13 @@ int main()
 			cout << "eye-blink";
 		}	
 		
+		save_file << centerX << "," << centerY << endl;
+
 		imshow("window",image);
 		imshow("filtered",image_gray);
 		key = waitKey(30);
 	}
 	
+	save_file.close();	
+
 }
