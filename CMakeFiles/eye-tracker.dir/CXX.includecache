@@ -6,9 +6,9 @@
 
 #IncludeRegexTransform: 
 
-/home/bijanadmin/git/eye-tracker/eye-tracker.cpp
+/home/rabadi/git/eye-tracker/eye-tracker.cpp
 flycapture/FlyCapture2.h
-/home/bijanadmin/git/eye-tracker/flycapture/FlyCapture2.h
+/home/rabadi/git/eye-tracker/flycapture/FlyCapture2.h
 opencv2/core/core.hpp
 -
 opencv2/highgui/highgui.hpp

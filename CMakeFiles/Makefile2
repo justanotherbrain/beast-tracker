@@ -47,10 +47,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/bijanadmin/git/eye-tracker
+CMAKE_SOURCE_DIR = /home/rabadi/git/eye-tracker
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/bijanadmin/git/eye-tracker
+CMAKE_BINARY_DIR = /home/rabadi/git/eye-tracker
 
 #=============================================================================
 # Target rules for target CMakeFiles/eye-tracker.dir
@@ -59,7 +59,7 @@ CMAKE_BINARY_DIR = /home/bijanadmin/git/eye-tracker
 CMakeFiles/eye-tracker.dir/all:
 	$(MAKE) -f CMakeFiles/eye-tracker.dir/build.make CMakeFiles/eye-tracker.dir/depend
 	$(MAKE) -f CMakeFiles/eye-tracker.dir/build.make CMakeFiles/eye-tracker.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/bijanadmin/git/eye-tracker/CMakeFiles  1
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/rabadi/git/eye-tracker/CMakeFiles  1
 	@echo "Built target eye-tracker"
 .PHONY : CMakeFiles/eye-tracker.dir/all
 
@@ -69,9 +69,9 @@ all: CMakeFiles/eye-tracker.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/eye-tracker.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/bijanadmin/git/eye-tracker/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/rabadi/git/eye-tracker/CMakeFiles 1
 	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/eye-tracker.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/bijanadmin/git/eye-tracker/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/rabadi/git/eye-tracker/CMakeFiles 0
 .PHONY : CMakeFiles/eye-tracker.dir/rule
 
 # Convenience name for target.
