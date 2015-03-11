@@ -214,6 +214,13 @@ int main()
 	char kb = 0;	
 	namedWindow("set",1);
 	
+	if (record_video==1){
+		double fps = 120;
+		VideoWriter demo;
+		int ex = static_cast<int>(
+	}
+
+
 	Image tmpImage;
 	Image rgbTmp;
 	cv::Mat tmp;
@@ -288,6 +295,13 @@ int main()
 	// caputer loop
 	//char key = 0;
 	bool refresh = true;
+
+	// set up video recorder
+        if (record_video==1){
+                double fps = 120;
+                VideoWriter demo;
+                int ex = static_cast<int>(camera.get(CV_CAP_PROP_FOURCC));
+        }
 	
 	
 	// make sliders
