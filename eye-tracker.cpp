@@ -146,7 +146,7 @@ void bin_threshold_trackbar(int,void*){
 int main()
 {
 	// save file
-	cout << "Choose a file name to save to. Defaults to current date and time... \n \n";
+	cout << "\nChoose a file name to save to. Defaults to current date and time...\n";
 	
 	string input = "";
 	string filename;
@@ -157,6 +157,21 @@ int main()
 	else{
 		filename = input;
 	}
+
+	string svid = "0";
+	bool record_video = 0;
+	while(svid != "y" and svid != "Y" and svid != "n" and svid != "N" and svid != ""){
+		cout << "\nSave video? y or [n]: ";
+		getline(cin,svid);
+	}
+	if (svid == "y" or svid == "y"){
+		record_video = 1;
+		cout << "bueno\n";
+	}
+	else {
+		cout << "buenoer\n";
+	}
+
 	filename.append(".csv");
 	const char *fn = filename.c_str();
 	
