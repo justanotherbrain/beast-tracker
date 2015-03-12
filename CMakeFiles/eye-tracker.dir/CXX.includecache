@@ -27,6 +27,8 @@ math.h
 -
 highgui.h
 -
+time.h
+-
 
 /usr/local/include/opencv/highgui.h
 opencv2/core/core_c.h

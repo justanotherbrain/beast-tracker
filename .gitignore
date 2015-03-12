@@ -4,4 +4,6 @@ CMakeCache.txt
 *.pyc
 *.origin
 CMakeFiles
+cmake_install.cmake
+Makefile
 

@@ -11,11 +11,25 @@
 #include <stdio.h>
 #include <math.h>
 #include <highgui.h>
+#include <time.h>
 
 
 using namespace FlyCapture2;
 using namespace cv;
 using namespace std;
+
+
+class CStopWatch{
+private:
+	clock_t start;
+	clock_t finish;
+
+public:
+	double GetDuration() {return (double)(finish-start) / CLOCKS_PER_SEC;}
+	void Start() {start = clock();}
+	void Stop() {finish = clock();}
+
+};
 
 
 Vec<int,4> coordinates;
@@ -48,6 +62,10 @@ int bin_threshold_slider_max = 255;
 int bin_threshold_slider;
 int bin_threshold;
 
+int rec_slider_max = 1;
+int rec_slider;
+int record_video;
+
 bool isDrawing = false;
 Point start, end;
 
@@ -68,6 +86,8 @@ void drawBox(Point start, Point end, Mat& img){
 	rectangle(img, start, end, color, 10, 8, 0);
 	return;
 }
+
+
 
 void mouseEvent(int evt, int x, int y, int flags, void* param){
 	if(isDrawing){
@@ -95,6 +115,8 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
     		}
 	}
 }
+
+
 
 void min_dist_trackbar(int, void*){
 	if (min_dist_slider==0){
@@ -143,8 +165,16 @@ void bin_threshold_trackbar(int,void*){
 	bin_threshold = (int) bin_threshold_slider;
 }
 
+void rec_trackbar(int,void*){
+	record_video = (int) rec_slider;
+}
+
+
 int main()
 {
+	// initialize timer rec
+	double delay;
+	CStopWatch sw;
 	// save file
 	cout << "\nChoose a file name to save to. Defaults to current date and time...\n";
 	
@@ -159,15 +189,6 @@ int main()
 	else{
 		filename = input;
 		video_filename = input;
-	}
-	string svid = "0";
-	bool record_video = 0;
-	while(svid != "y" and svid != "Y" and svid != "n" and svid != "N" and svid != ""){
-		cout << "\nSave video? y or [n]: ";
-		getline(cin,svid);
-	}
-	if (svid == "y" or svid == "y"){
-		record_video = 1;
 	}
 
 	filename.append(".csv");
@@ -256,6 +277,7 @@ int main()
 			coordinates[3] = hold+coordinates[1];
 		}
 	}
+	destroyWindow("set");
 	//double fps = cap.get(CV_CAP_PROP_FPS);
 	int dp = 1;
 	//int min_dist = sqrt( pow(tmp.rows,2) + pow(tmp.cols,2));
@@ -277,39 +299,59 @@ int main()
 	med_blur = 75;
 	med_blur_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])-10;
 	med_blur_slider = 75;
+
+	record_video = 0;
+	rec_slider = 0;
+	rec_slider_max = 1;
 	Mat window;
 	Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
 	Vec<float,2> offset;
 	offset[0] = coordinates[0];
 	offset[1] = coordinates[1];
+	
+	// setup windows
 	namedWindow("window",WINDOW_NORMAL);
 	namedWindow("filtered",WINDOW_NORMAL);
+	cvNamedWindow("control",WINDOW_NORMAL);
+	resizeWindow("window",400,300);
+	resizeWindow("filtered",250,200);
+	resizeWindow("control",250,80);
+	moveWindow("window",0,0);
+	moveWindow("filtered",400,0);
+	moveWindow("control",650,0);
 	bool refresh = true;
 
-	// set up video recorder
+	// Initialize video recorder
 	VideoWriter vid;
 	//int ex = static_cast<int>(error.get(CV_CAP_PROP_FOURCC));
-        if (record_video==1){
-                double fps = 120;
-                Size S = Size((int) rgbTmp.GetRows(), (int) rgbTmp.GetCols());
+//        if (record_video==1){
+	        double fps = 20;
+        	Size S = Size((int) rgbTmp.GetCols(), (int) rgbTmp.GetRows());
 		video_filename = video_filename.append("-video.avi"); 
-               // vid.open(video_filename,CV_FOURCC('W','M','V','2'),fps,S,true);
+               //vid.open(video_filename,CV_FOURCC('X','V','I','D'),fps,S,true);
  		vid.open(video_filename,1196444237,fps,S,true);
-	}
+		//vid.open(video_filename,0,fps,S,true);
+//	}
 
 
 
 	// make sliders
-	createTrackbar("Min Distance", "filtered", &min_dist_slider,min_dist_slider_max,min_dist_trackbar);
-	createTrackbar("Canny Threshold", "filtered", &canny_threshold_slider, canny_threshold_slider_max, canny_threshold_trackbar);
-	createTrackbar("Center Threshold", "filtered", &center_threshold_slider,center_threshold_slider_max, center_threshold_trackbar);
-	createTrackbar("Min Radius", "filtered", &min_radius_slider,min_radius_slider_max, min_radius_trackbar);
-	createTrackbar("Max Radius", "filtered", &max_radius_slider,max_radius_slider_max, max_radius_trackbar);
-	createTrackbar("Median blur", "filtered", &med_blur_slider, med_blur_slider_max, med_blur_trackbar);
-	createTrackbar("Bin Threshold", "filtered", &bin_threshold_slider, bin_threshold_slider_max, bin_threshold_trackbar);
+	createTrackbar("Min Distance", "control", &min_dist_slider,min_dist_slider_max,min_dist_trackbar);
+	createTrackbar("Canny Threshold", "control", &canny_threshold_slider, canny_threshold_slider_max, canny_threshold_trackbar);
+	createTrackbar("Center Threshold", "control", &center_threshold_slider,center_threshold_slider_max, center_threshold_trackbar);
+	createTrackbar("Min Radius", "control", &min_radius_slider,min_radius_slider_max, min_radius_trackbar);
+	createTrackbar("Max Radius", "control", &max_radius_slider,max_radius_slider_max, max_radius_trackbar);
+	createTrackbar("Median blur", "control", &med_blur_slider, med_blur_slider_max, med_blur_trackbar);
+	createTrackbar("Bin Threshold", "control", &bin_threshold_slider, bin_threshold_slider_max, bin_threshold_trackbar);
+	createTrackbar("Record","control",&rec_slider,rec_slider_max,rec_trackbar);
+
+
 	char key = 0;
 	while(key != 'q')
 	{
+		//start timer
+		sw.Start();
+
 		Image rawImage;
 		Error error = camera.RetrieveBuffer( &rawImage );
 		if (error != PGRERROR_OK ){
@@ -357,7 +399,8 @@ int main()
 		
 			Point center(cvRound(centerX), cvRound(centerY));
 			
-			int radius = cvRound(r/circles.size());
+			//int radius = cvRound(r/circles.size());
+			int radius = (min_radius+max_radius)/2;
 			// circle center
 			circle(image,center,3,Scalar(0,255,0),-1,8,0);
 			// circle outline
@@ -368,7 +411,6 @@ int main()
 			centerY = 0;
 		}	
 		
-		save_file << centerX << "," << centerY << endl;
 		
 		if (record_video==1){
 			vid.write(image);
@@ -376,10 +418,13 @@ int main()
 
 		imshow("window",image);
 		imshow("filtered",image_gray);
-		key = waitKey(30);
+		
+		key = waitKey(5);
+		sw.Stop();
+		delay = sw.GetDuration();
+		save_file << centerX << "," << centerY << "," << delay << endl;
 	}
-	//error = camera.StopCapture();
-	//if (error!=PGRERROR_OK){}
-	//camera.Disconnect();	
+
+
 
 }
