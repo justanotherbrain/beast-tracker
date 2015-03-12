@@ -150,14 +150,16 @@ int main()
 	
 	string input = "";
 	string filename;
+	string video_filename;
 	getline(cin, input);
 	if (input == ""){
 		filename = currentDateTime();
+		video_filename = currentDateTime();
 	}
 	else{
 		filename = input;
+		video_filename = input;
 	}
-
 	string svid = "0";
 	bool record_video = 0;
 	while(svid != "y" and svid != "Y" and svid != "n" and svid != "N" and svid != ""){
@@ -166,10 +168,6 @@ int main()
 	}
 	if (svid == "y" or svid == "y"){
 		record_video = 1;
-		cout << "bueno\n";
-	}
-	else {
-		cout << "buenoer\n";
 	}
 
 	filename.append(".csv");
@@ -212,14 +210,8 @@ int main()
 	cout << "click and drag on image to select reference size\n";
 	cout << "press c to continue\n";
 	char kb = 0;	
-	namedWindow("set",1);
+	namedWindow("set",WINDOW_NORMAL);
 	
-	if (record_video==1){
-		double fps = 120;
-		VideoWriter demo;
-		int ex = static_cast<int>(
-	}
-
 
 	Image tmpImage;
 	Image rgbTmp;
@@ -290,20 +282,23 @@ int main()
 	Vec<float,2> offset;
 	offset[0] = coordinates[0];
 	offset[1] = coordinates[1];
-	namedWindow("window",1);
-	namedWindow("filtered",1);
-	// caputer loop
-	//char key = 0;
+	namedWindow("window",WINDOW_NORMAL);
+	namedWindow("filtered",WINDOW_NORMAL);
 	bool refresh = true;
 
 	// set up video recorder
+	VideoWriter vid;
+	//int ex = static_cast<int>(error.get(CV_CAP_PROP_FOURCC));
         if (record_video==1){
                 double fps = 120;
-                VideoWriter demo;
-                int ex = static_cast<int>(camera.get(CV_CAP_PROP_FOURCC));
-        }
-	
-	
+                Size S = Size((int) rgbTmp.GetRows(), (int) rgbTmp.GetCols());
+		video_filename = video_filename.append("-video.avi"); 
+               // vid.open(video_filename,CV_FOURCC('W','M','V','2'),fps,S,true);
+ 		vid.open(video_filename,1196444237,fps,S,true);
+	}
+
+
+
 	// make sliders
 	createTrackbar("Min Distance", "filtered", &min_dist_slider,min_dist_slider_max,min_dist_trackbar);
 	createTrackbar("Canny Threshold", "filtered", &canny_threshold_slider, canny_threshold_slider_max, canny_threshold_trackbar);
@@ -315,8 +310,6 @@ int main()
 	char key = 0;
 	while(key != 'q')
 	{
-		
-		
 		Image rawImage;
 		Error error = camera.RetrieveBuffer( &rawImage );
 		if (error != PGRERROR_OK ){
@@ -330,20 +323,7 @@ int main()
 		unsigned int rowBytes = (double)rgbImage.GetReceivedDataSize()/(double)rgbImage.GetRows();
 		Mat image = Mat(rgbImage.GetRows(), rgbImage.GetCols(),CV_8UC3, rgbImage.GetData(),rowBytes);
 
-		//Mat image;
-		//Mat i1, i2;
-		//if(refresh)
-		//{
-		//	cap.grab();
-		//	cap.retrieve(i1);
-		//	cap.grab();
-		//	cap.retrieve(i2);
-		//} 
-		//cap.retrieve(image);
-		//addWeighted(i1, 0.5, i2, 0.5, 0.0, image);
-		
-		// convert to gray
-		
+		// convert to gray	
 		Mat image_gray;
 		image_gray = image(myROI);
 
@@ -374,8 +354,6 @@ int main()
 		
 			centerX=cvFloor(x/circles.size()+offset[0]);
 			centerY=cvFloor(y/circles.size()+offset[1]);
-			//float centerX=circles[0][0]+offset[0];
-			//float centerY=circles[0][1]+offset[1];	
 		
 			Point center(cvRound(centerX), cvRound(centerY));
 			
@@ -386,16 +364,22 @@ int main()
 			circle(image,center,radius,Scalar(0,0,255),3,8,0);
 		}
 		else{
-			cout << "eye-blink";
+			centerX = 0;
+			centerY = 0;
 		}	
 		
 		save_file << centerX << "," << centerY << endl;
+		
+		if (record_video==1){
+			vid.write(image);
+		}
 
 		imshow("window",image);
 		imshow("filtered",image_gray);
 		key = waitKey(30);
 	}
-	
-	save_file.close();	
+	//error = camera.StopCapture();
+	//if (error!=PGRERROR_OK){}
+	//camera.Disconnect();	
 
 }

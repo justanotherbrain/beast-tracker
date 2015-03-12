@@ -4,7 +4,7 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/bijanadmin/git/eye-tracker/eye-tracker.cpp" "/home/bijanadmin/git/eye-tracker/CMakeFiles/eye-tracker.dir/eye-tracker.cpp.o"
+  "/home/bijanadmin/development/eye-tracker/eye-tracker.cpp" "/home/bijanadmin/development/eye-tracker/CMakeFiles/eye-tracker.dir/eye-tracker.cpp.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "GNU")
 
