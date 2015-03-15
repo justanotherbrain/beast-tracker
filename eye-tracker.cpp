@@ -414,15 +414,19 @@ int main()
 		
 		if (record_video==1){
 			vid.write(image);
+			sw.Stop();
+	                delay = sw.GetDuration();
+        	        save_file << centerX << "," << centerY << "," << delay << endl;
+
 		}
 
 		imshow("window",image);
 		imshow("filtered",image_gray);
 		
 		key = waitKey(5);
-		sw.Stop();
-		delay = sw.GetDuration();
-		save_file << centerX << "," << centerY << "," << delay << endl;
+		//sw.Stop();
+		//delay = sw.GetDuration();
+		//save_file << centerX << "," << centerY << "," << delay << endl;
 	}
 
 
