@@ -3,7 +3,7 @@ CMakeCache.txt
 *.mp4
 *.pyc
 *.origin
-CMakeFiles
+CMakeFiles/
 cmake_install.cmake
 Makefile
 

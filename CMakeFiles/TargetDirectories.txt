@@ -1,1 +1,0 @@
-/home/bijanadmin/development/eye-tracker/CMakeFiles/eye-tracker.dir
