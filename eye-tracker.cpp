@@ -31,6 +31,9 @@ public:
 
 };
 
+int max_solves_slider_max = 100;
+int max_solves_slider;
+int max_solves = 100;
 
 Vec<int,4> coordinates;
 
@@ -65,6 +68,10 @@ int bin_threshold;
 int rec_slider_max = 1;
 int rec_slider;
 int record_video;
+
+int video_display_slider_max = 1;
+int video_display_slider;
+int video_display;
 
 bool isDrawing = false;
 Point start, end;
@@ -165,10 +172,17 @@ void bin_threshold_trackbar(int,void*){
 	bin_threshold = (int) bin_threshold_slider;
 }
 
+void max_solves_trackbar(int,void*){
+	max_solves = (int) max_solves_slider;
+}
+
 void rec_trackbar(int,void*){
 	record_video = (int) rec_slider;
 }
 
+void video_display_trackbar(int,void*){
+	video_display = (int) video_display_slider;
+}
 
 int main()
 {
@@ -233,7 +247,7 @@ int main()
 	char kb = 0;	
 	namedWindow("set",WINDOW_NORMAL);
 	
-
+	
 	Image tmpImage;
 	Image rgbTmp;
 	cv::Mat tmp;
@@ -290,7 +304,7 @@ int main()
 	
 	max_radius = 140;
 	max_radius_slider = 100;
-	max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1]);
+	max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+100;
 	min_radius = 75;
 	min_radius_slider = 75;
 	min_radius_slider_max = max_radius_slider_max-1;
@@ -299,6 +313,14 @@ int main()
 	med_blur = 75;
 	med_blur_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])-10;
 	med_blur_slider = 75;
+
+	//max_solves_slider_max = 100;
+	//max_solves_slider = 100;
+	//max_solves = 100;
+
+	video_display_slider_max = 1;
+	video_display_slider = 1;
+	video_display = 1;
 
 	record_video = 0;
 	rec_slider = 0;
@@ -343,15 +365,16 @@ int main()
 	createTrackbar("Max Radius", "control", &max_radius_slider,max_radius_slider_max, max_radius_trackbar);
 	createTrackbar("Median blur", "control", &med_blur_slider, med_blur_slider_max, med_blur_trackbar);
 	createTrackbar("Bin Threshold", "control", &bin_threshold_slider, bin_threshold_slider_max, bin_threshold_trackbar);
+//	createTrackbar("Max Solves","control",&max_solves_slider, max_solves_slider_max, max_solves_trackbar);
+	createTrackbar("Display Video","control",&video_display_slider, video_display_slider_max, video_display_trackbar);
 	createTrackbar("Record","control",&rec_slider,rec_slider_max,rec_trackbar);
 
-
+	sw.Start(); // start timer
 	char key = 0;
 	while(key != 'q')
 	{
 		//start timer
-		sw.Start();
-
+		//sw.Start();
 		Image rawImage;
 		Error error = camera.RetrieveBuffer( &rawImage );
 		if (error != PGRERROR_OK ){
@@ -376,16 +399,15 @@ int main()
 		threshold(image_gray, image_gray, bin_threshold, 255, THRESH_BINARY);
 		GaussianBlur( image_gray, image_gray, Size(9, 9), 2, 2);
 		vector<Vec3f> circles;
-		
 		//Apply the Hough Transform to find the circles
 		HoughCircles( image_gray, circles, CV_HOUGH_GRADIENT, dp, min_dist, canny_threshold, center_threshold, min_radius, max_radius);
-		
 		//Draw circles detected
 		float x=0;
 		float y=0;
 		float r=0;
 		float centerX;
 		float centerY;
+		
 		if (circles.size()>0){
 			for( size_t i=0; i< circles.size(); i++)
 			{
@@ -399,12 +421,14 @@ int main()
 		
 			Point center(cvRound(centerX), cvRound(centerY));
 			
-			//int radius = cvRound(r/circles.size());
-			int radius = (min_radius+max_radius)/2;
-			// circle center
-			circle(image,center,3,Scalar(0,255,0),-1,8,0);
-			// circle outline
-			circle(image,center,radius,Scalar(0,0,255),3,8,0);
+			if (video_display==1){
+				//int radius = cvRound(r/circles.size());
+				int radius = (min_radius+max_radius)/2;
+				// circle center
+				circle(image,center,3,Scalar(0,255,0),-1,8,0);
+				// circle outline
+				circle(image,center,radius,Scalar(0,0,255),3,8,0);
+			}
 		}
 		else{
 			centerX = 0;
@@ -412,7 +436,7 @@ int main()
 		}	
 		
 		
-		if (record_video==1){
+		if (record_video == 1){
 			vid.write(image);
 			sw.Stop();
 	                delay = sw.GetDuration();
@@ -420,13 +444,13 @@ int main()
 
 		}
 
-		imshow("window",image);
-		imshow("filtered",image_gray);
+		if (video_display==1){
+			imshow("window",image);
+			imshow("filtered",image_gray);
+		}
+		key = waitKey(1);
 		
-		key = waitKey(5);
-		//sw.Stop();
-		//delay = sw.GetDuration();
-		//save_file << centerX << "," << centerY << "," << delay << endl;
+		sw.Start(); // restart timer
 	}
 
 
