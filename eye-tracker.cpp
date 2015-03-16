@@ -73,8 +73,13 @@ int video_display_slider_max = 1;
 int video_display_slider;
 int video_display;
 
+int run_program_slider_max = 1;
+int run_program_slider = 1;
+int run_program = 1;
+
 bool isDrawing = false;
 Point start, end;
+
 
 const std::string currentDateTime() {
     time_t     now = time(0);
@@ -172,8 +177,8 @@ void bin_threshold_trackbar(int,void*){
 	bin_threshold = (int) bin_threshold_slider;
 }
 
-void max_solves_trackbar(int,void*){
-	max_solves = (int) max_solves_slider;
+void run_program_trackbar(int,void*){
+	run_program = (int) run_program_slider;
 }
 
 void rec_trackbar(int,void*){
@@ -292,9 +297,7 @@ int main()
 		}
 	}
 	destroyWindow("set");
-	//double fps = cap.get(CV_CAP_PROP_FPS);
 	int dp = 1;
-	//int min_dist = sqrt( pow(tmp.rows,2) + pow(tmp.cols,2));
 	min_dist = 1;
 	min_dist_slider = 1;
 	canny_threshold = 10;
@@ -313,10 +316,6 @@ int main()
 	med_blur = 75;
 	med_blur_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])-10;
 	med_blur_slider = 75;
-
-	//max_solves_slider_max = 100;
-	//max_solves_slider = 100;
-	//max_solves = 100;
 
 	video_display_slider_max = 1;
 	video_display_slider = 1;
@@ -345,15 +344,10 @@ int main()
 
 	// Initialize video recorder
 	VideoWriter vid;
-	//int ex = static_cast<int>(error.get(CV_CAP_PROP_FOURCC));
-//        if (record_video==1){
-	        double fps = 20;
-        	Size S = Size((int) rgbTmp.GetCols(), (int) rgbTmp.GetRows());
-		video_filename = video_filename.append("-video.avi"); 
-               //vid.open(video_filename,CV_FOURCC('X','V','I','D'),fps,S,true);
- 		vid.open(video_filename,1196444237,fps,S,true);
-		//vid.open(video_filename,0,fps,S,true);
-//	}
+	double fps = 20;
+	Size S = Size((int) rgbTmp.GetCols(), (int) rgbTmp.GetRows());
+	video_filename = video_filename.append("-video.avi"); 
+	vid.open(video_filename,1196444237,fps,S,true);
 
 
 
@@ -365,16 +359,17 @@ int main()
 	createTrackbar("Max Radius", "control", &max_radius_slider,max_radius_slider_max, max_radius_trackbar);
 	createTrackbar("Median blur", "control", &med_blur_slider, med_blur_slider_max, med_blur_trackbar);
 	createTrackbar("Bin Threshold", "control", &bin_threshold_slider, bin_threshold_slider_max, bin_threshold_trackbar);
-//	createTrackbar("Max Solves","control",&max_solves_slider, max_solves_slider_max, max_solves_trackbar);
 	createTrackbar("Display Video","control",&video_display_slider, video_display_slider_max, video_display_trackbar);
 	createTrackbar("Record","control",&rec_slider,rec_slider_max,rec_trackbar);
-
+	//createTrackbar("Run Program","control",&run_program_slider,run_program_slider_max,run_program_trackbar);
 	sw.Start(); // start timer
 	char key = 0;
-	while(key != 'q')
-	{
+	
+	int reset = 1000;
+	int iter = 0;
+	while(key != 'q'){
+
 		//start timer
-		//sw.Start();
 		Image rawImage;
 		Error error = camera.RetrieveBuffer( &rawImage );
 		if (error != PGRERROR_OK ){
@@ -393,12 +388,14 @@ int main()
 		image_gray = image(myROI);
 
 		cvtColor( image_gray, image_gray, CV_BGR2GRAY);
-		medianBlur(image_gray,image_gray,med_blur);
-		
+		//medianBlur(image_gray,image_gray,med_blur);
+		blur(image_gray,image_gray,Size(med_blur,med_blur));
 
 		threshold(image_gray, image_gray, bin_threshold, 255, THRESH_BINARY);
 		GaussianBlur( image_gray, image_gray, Size(9, 9), 2, 2);
 		vector<Vec3f> circles;
+		
+				
 		//Apply the Hough Transform to find the circles
 		HoughCircles( image_gray, circles, CV_HOUGH_GRADIENT, dp, min_dist, canny_threshold, center_threshold, min_radius, max_radius);
 		//Draw circles detected
@@ -437,19 +434,22 @@ int main()
 		
 		
 		if (record_video == 1){
-			vid.write(image);
+			//vid.write(image);
 			sw.Stop();
 	                delay = sw.GetDuration();
         	        save_file << centerX << "," << centerY << "," << delay << endl;
-
 		}
+		
 
 		if (video_display==1){
 			imshow("window",image);
 			imshow("filtered",image_gray);
 		}
-		key = waitKey(1);
 		
+//		if (run_program==0){
+//			return 0;
+//		}
+		key = waitKey(1);
 		sw.Start(); // restart timer
 	}
 
