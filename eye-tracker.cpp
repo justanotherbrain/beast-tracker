@@ -77,6 +77,10 @@ int run_program_slider_max = 1;
 int run_program_slider = 1;
 int run_program = 1;
 
+int save_csv_slider_max = 1;
+int save_csv_slider = 0;
+int save_csv = 0;
+
 bool isDrawing = false;
 Point start, end;
 
@@ -188,6 +192,11 @@ void rec_trackbar(int,void*){
 void video_display_trackbar(int,void*){
 	video_display = (int) video_display_slider;
 }
+
+void save_csv_trackbar(int,void*){
+	save_csv = (int) save_csv_slider;
+}
+
 
 int main()
 {
@@ -434,16 +443,18 @@ int main()
 		
 		
 		if (record_video == 1){
-			//vid.write(image);
+			vid.write(image);
 			sw.Stop();
 	                delay = sw.GetDuration();
         	        save_file << centerX << "," << centerY << "," << delay << endl;
 		}
 		
 
-		if (video_display==1){
-			imshow("window",image);
-			imshow("filtered",image_gray);
+		if (video_display==1 or save_csv==1){
+			if (video_display==1){
+				imshow("window",image);
+				imshow("filtered",image_gray);
+			}
 		}
 		
 //		if (run_program==0){
