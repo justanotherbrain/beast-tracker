@@ -134,10 +134,10 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 }
 
 
-//Mat coordinate(Point point, Mat& img, Camera& camera){
-//	Mat tmp;
-//	return tmp;
-//}
+Mat coordinate(Point point, Mat& img, Camera& camera){
+	Mat tmp;
+	return tmp;
+}
 
 
 
@@ -147,65 +147,65 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 // The equation that converts eye-positions on the camera to the screen
 // has four parameters. This method regresses those parameters for its 
 // calibration step.
-//Vec<float,4> calibrateEyeTracker(Mat& img, Camera& camera){
-//	int p = 50;
-//	
-//	// initialize regression matrices
-//	//Vec<float,2> pos0 = Vec(p,p);
-//	float pos0[] = {p, p};
-//
-//	Point position0 = Point(p, p);
-//	Point position1 = Point(p, img.rows-p);
-//	Point position2 = Point(img.cols-p, img.rows-p);
-//	Point position3 = Point(img.cols-p, p);
-//	
-//	Mat coord0 = coordinate(position0, img, camera);
-//	Mat coord1 = coordinate(position1, img, camera);
-//	Mat coord2 = coordinate(position2, img, camera);
-//	Mat coord3 = coordinate(position3, img, camera);
-//	
-//	Mat X = Mat(coord0.rows+coord1.rows+coord2.rows+coord3.rows, 2, CV_32F, vconcat(coord0,coord1,coord2,coord3)).clone();
-//	Mat Xx = Mat(X.rows, X.cols, CV_32F, hconcat(ones(X.rows,1), X.col(0))).clone();
-//	Mat Xy = Mat(X.rows, X.cols, CV_32F, hconcat(ones(X.rows,1), X.col(1))).clone();
-//
-//	Mat Yy = Mat(X.rows, 1, CV_32F, zeros(coord0.rows+coord1.rows+coord2.rows+coord3.rows, 1)).clone();
-//	Mat Yx = Mat(X.rows, 1, CV_32F, zeros(Yy.rows, 1)).clone();
-//
-//
-//	for (int i = 0; i < coord0.rows; i=i+1){
-//		Yx.at<float>(i,0)=position0[0];
-//		Yy.at<float>(i,0)=position0[1];
-//	}
-//	
-//	for (int i = coord0.rows; i < coord0.rows+coord1.rows; i=i+1){
-//		Yx.at<float>(i,0)=position1[0];
-//		Yy.at<float>(i,0)=position1[1];
-//	}
-//
-//	for (int i = coord0.rows+coord1.rows; i < coord0.rows+coord1.rows+coord2.rows; i = i+1){
-//		Yx.at<float>(i,0)=position2[0];
-//		Yy.at<float>(i,0)=position2[1];
-//	}
-//
-//	for (int i = coord0.rows+coord1.rows+coord2.rows; i < Yy.rows; i=i+1){
-//		Yx.at<float>(i,0)=position3[0];
-//		Yy.at<float>(i,0)=position3[1];
-//	}
-//
-//	// Linear regression
-//	Mat Ax = Xx.t() * Xx;
-//	Mat Ay = Xy.t() * Xy;
-//
-//	Mat bx = Ax.inv(DECOMP_SVD) * Xx.t() * Yx;
-//	Mat by = Ay.inv(DECOMP_SVD) * Xy.t() * Yy; 
-//
-//	tracking_params[0] = bx.row(0);
-//	tracking_params[1] = bx.row(1);
-//	tracking_params[2] = by.row(0);
-//	tracking_params[3] = by.row(1);
-//	
-//	return tracking_params;
-//}
+Vec<float,4> calibrateEyeTracker(Mat& img, Camera& camera){
+	int p = 50;
+	
+	// initialize regression matrices
+	//Vec<float,2> pos0 = Vec(p,p);
+	float pos0[] = {p, p};
+
+	Point position0 = Point(p, p);
+	Point position1 = Point(p, img.rows-p);
+	Point position2 = Point(img.cols-p, img.rows-p);
+	Point position3 = Point(img.cols-p, p);
+	
+	Mat coord0 = coordinate(position0, img, camera);
+	Mat coord1 = coordinate(position1, img, camera);
+	Mat coord2 = coordinate(position2, img, camera);
+	Mat coord3 = coordinate(position3, img, camera);
+	
+	Mat X = Mat(coord0.rows+coord1.rows+coord2.rows+coord3.rows, 2, CV_32F, vconcat(coord0,coord1,coord2,coord3)).clone();
+	Mat Xx = Mat(X.rows, X.cols, CV_32F, hconcat(ones(X.rows,1), X.col(0))).clone();
+	Mat Xy = Mat(X.rows, X.cols, CV_32F, hconcat(ones(X.rows,1), X.col(1))).clone();
+
+	Mat Yy = Mat(X.rows, 1, CV_32F, zeros(coord0.rows+coord1.rows+coord2.rows+coord3.rows, 1)).clone();
+	Mat Yx = Mat(X.rows, 1, CV_32F, zeros(Yy.rows, 1)).clone();
+
+
+	for (int i = 0; i < coord0.rows; i=i+1){
+		Yx.at<float>(i,0)=position0[0];
+		Yy.at<float>(i,0)=position0[1];
+	}
+	
+	for (int i = coord0.rows; i < coord0.rows+coord1.rows; i=i+1){
+		Yx.at<float>(i,0)=position1[0];
+		Yy.at<float>(i,0)=position1[1];
+	}
+
+	for (int i = coord0.rows+coord1.rows; i < coord0.rows+coord1.rows+coord2.rows; i = i+1){
+		Yx.at<float>(i,0)=position2[0];
+		Yy.at<float>(i,0)=position2[1];
+	}
+
+	for (int i = coord0.rows+coord1.rows+coord2.rows; i < Yy.rows; i=i+1){
+		Yx.at<float>(i,0)=position3[0];
+		Yy.at<float>(i,0)=position3[1];
+	}
+
+	// Linear regression
+	Mat Ax = Xx.t() * Xx;
+	Mat Ay = Xy.t() * Xy;
+
+	Mat bx = Ax.inv(DECOMP_SVD) * Xx.t() * Yx;
+	Mat by = Ay.inv(DECOMP_SVD) * Xy.t() * Yy; 
+
+	tracking_params[0] = bx.row(0);
+	tracking_params[1] = bx.row(1);
+	tracking_params[2] = by.row(0);
+	tracking_params[3] = by.row(1);
+	
+	return tracking_params;
+}
 
 
 
