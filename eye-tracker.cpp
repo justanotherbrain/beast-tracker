@@ -19,6 +19,8 @@ using namespace cv;
 using namespace std;
 
 
+// CStopWatch:
+// A simple timer class with Start, Stop, and GetDuration function calls 
 class CStopWatch{
 private:
 	clock_t start;
@@ -31,6 +33,8 @@ public:
 
 };
 
+
+// Initialize global variables: These are necessary for GUI function
 int max_solves_slider_max = 100;
 int max_solves_slider;
 int max_solves = 100;
@@ -86,6 +90,8 @@ bool isDrawing = false;
 Point start, end;
 
 
+// currentDateTime:
+// Returns the current date and time
 const std::string currentDateTime() {
     time_t     now = time(0);
     struct tm  tstruct;
@@ -97,6 +103,8 @@ const std::string currentDateTime() {
 }
 
 
+// drawBox:
+// A simple drawing function that draws a box around the ROI during setup
 void drawBox(Point start, Point end, Mat& img){
 	imshow("set",img);
 	Scalar color = (255,0,0);
@@ -105,7 +113,8 @@ void drawBox(Point start, Point end, Mat& img){
 }
 
 
-
+// mouseEvent:
+// Records coordinates for where box is drawn. Saves coordinates for ROI
 void mouseEvent(int evt, int x, int y, int flags, void* param){
 	if(isDrawing){
 		if(evt==CV_EVENT_LBUTTONUP){
@@ -134,81 +143,8 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 }
 
 
-//Mat coordinate(Point point, Mat& img, Camera& camera){
-//	Mat tmp;
-//	return tmp;
-//}
 
-
-
-// calibrateEyeTracker:
-// Use this class to calibrate the eye-tracker so you can use with screen
-// This classes uses the coordinate function to make matrices of points.
-// The equation that converts eye-positions on the camera to the screen
-// has four parameters. This method regresses those parameters for its 
-// calibration step.
-//Vec<float,4> calibrateEyeTracker(Mat& img, Camera& camera){
-//	int p = 50;
-//	
-//	// initialize regression matrices
-//	//Vec<float,2> pos0 = Vec(p,p);
-//	float pos0[] = {p, p};
-//
-//	Point position0 = Point(p, p);
-//	Point position1 = Point(p, img.rows-p);
-//	Point position2 = Point(img.cols-p, img.rows-p);
-//	Point position3 = Point(img.cols-p, p);
-//	
-//	Mat coord0 = coordinate(position0, img, camera);
-//	Mat coord1 = coordinate(position1, img, camera);
-//	Mat coord2 = coordinate(position2, img, camera);
-//	Mat coord3 = coordinate(position3, img, camera);
-//	
-//	Mat X = Mat(coord0.rows+coord1.rows+coord2.rows+coord3.rows, 2, CV_32F, vconcat(coord0,coord1,coord2,coord3)).clone();
-//	Mat Xx = Mat(X.rows, X.cols, CV_32F, hconcat(ones(X.rows,1), X.col(0))).clone();
-//	Mat Xy = Mat(X.rows, X.cols, CV_32F, hconcat(ones(X.rows,1), X.col(1))).clone();
-//
-//	Mat Yy = Mat(X.rows, 1, CV_32F, zeros(coord0.rows+coord1.rows+coord2.rows+coord3.rows, 1)).clone();
-//	Mat Yx = Mat(X.rows, 1, CV_32F, zeros(Yy.rows, 1)).clone();
-//
-//
-//	for (int i = 0; i < coord0.rows; i=i+1){
-//		Yx.at<float>(i,0)=position0[0];
-//		Yy.at<float>(i,0)=position0[1];
-//	}
-//	
-//	for (int i = coord0.rows; i < coord0.rows+coord1.rows; i=i+1){
-//		Yx.at<float>(i,0)=position1[0];
-//		Yy.at<float>(i,0)=position1[1];
-//	}
-//
-//	for (int i = coord0.rows+coord1.rows; i < coord0.rows+coord1.rows+coord2.rows; i = i+1){
-//		Yx.at<float>(i,0)=position2[0];
-//		Yy.at<float>(i,0)=position2[1];
-//	}
-//
-//	for (int i = coord0.rows+coord1.rows+coord2.rows; i < Yy.rows; i=i+1){
-//		Yx.at<float>(i,0)=position3[0];
-//		Yy.at<float>(i,0)=position3[1];
-//	}
-//
-//	// Linear regression
-//	Mat Ax = Xx.t() * Xx;
-//	Mat Ay = Xy.t() * Xy;
-//
-//	Mat bx = Ax.inv(DECOMP_SVD) * Xx.t() * Yx;
-//	Mat by = Ay.inv(DECOMP_SVD) * Xy.t() * Yy; 
-//
-//	tracking_params[0] = bx.row(0);
-//	tracking_params[1] = bx.row(1);
-//	tracking_params[2] = by.row(0);
-//	tracking_params[3] = by.row(1);
-//	
-//	return tracking_params;
-//}
-
-
-
+// Initialize Trackbars
 void min_dist_trackbar(int, void*){
 	if (min_dist_slider==0){
 		min_dist_slider=1;
@@ -243,7 +179,7 @@ void max_radius_trackbar(int,void*){
 }
 
 void med_blur_trackbar(int,void*){
-	if (med_blur_slider % 2 == 0){
+	if (med_blur_slider % 2 == 0){ // blur requires even input
 		med_blur_slider=med_blur_slider+1;
 	}
 	if (med_blur_slider < 1){
@@ -274,14 +210,15 @@ void save_csv_trackbar(int,void*){
 
 
 
-
+// Main function:
+// This program will track the eye
 int main(){
 	// initialize timer rec
 	double delay;
 	CStopWatch sw;
+	
 	// save file
 	cout << "\nChoose a file name to save to. Defaults to current date and time...\n";
-	
 	string input = "";
 	string filename;
 	string video_filename;
@@ -300,6 +237,7 @@ int main(){
 	
 	ofstream save_file (fn);
 
+	// Initialize camera for setup
 	Error error;
 	Camera camera;
 	CameraInfo camInfo;
@@ -332,6 +270,11 @@ int main(){
 	}
 	
 
+
+
+	// Setup: User draws rectangle around ROI
+	//  Wait for 'c' to be pushed to move on
+	// If user enters 'c' without drawing an ROI, use full image
 	cout << "click and drag on image to select reference size\n";
 	cout << "press c to continue\n";
 	char kb = 0;	
@@ -342,12 +285,14 @@ int main(){
 	Image rgbTmp;
 	cv::Mat tmp;
 	while(kb != 'c'){
+		// Grab frame from buffer
 		Error error = camera.RetrieveBuffer(&tmpImage);
 		if (error != PGRERROR_OK){
 			std::cout<< "capture error" << std::endl;
 			return false;
 		}
-
+		
+		// Convert image to OpenCV color scheme
 		tmpImage.Convert(FlyCapture2::PIXEL_FORMAT_BGR, &rgbTmp);
 
 		unsigned int rowBytes = (double)rgbTmp.GetReceivedDataSize()/(double)rgbTmp.GetRows();
@@ -363,12 +308,15 @@ int main(){
 		}
 		kb = cvWaitKey(30);
 	}
+	// Set ROI to image size if no coordinates specified
 	if (coordinates[0] == 0 and coordinates[1] == 0){
 		coordinates[0] = 0;
 		coordinates[1] = 0;
 		coordinates[2] = tmp.cols;
 		coordinates[3] = tmp.rows;
 	}
+	// Make sure coordinates array is in proper form:
+	// elements 0 and 1 should be less than elements 2 and 3 respectively
 	else{
 		if (coordinates[0] > coordinates[2]){
 			int hold = coordinates[0];
@@ -382,33 +330,53 @@ int main(){
 		}
 	}
 	destroyWindow("set");
+	
+	// Initialize variables for sliders
+	
 	int dp = 1;
+	
+	// Min Dist
 	min_dist = 1;
 	min_dist_slider = 1;
+	
+	// Canny threshold
 	canny_threshold = 10;
 	canny_threshold_slider = 10;
+	
+	// Center threshold
 	center_threshold = 10;
 	center_threshold_slider = 10;
 	
+	// Max radius
 	max_radius = 140;
 	max_radius_slider = 100;
 	max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+100;
-	min_radius = 75;
-	min_radius_slider = 75;
+
+	// Min radius
+	min_radius = 50;
+	min_radius_slider = 50;
 	min_radius_slider_max = max_radius_slider_max-1;
+
+	// Binary threshold
 	bin_threshold = 21;
 	bin_threshold_slider = 21;
+
+	// Blur
 	med_blur = 75;
 	med_blur_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])-10;
 	med_blur_slider = 75;
 
+	// Video display
 	video_display_slider_max = 1;
 	video_display_slider = 1;
 	video_display = 1;
 
+	// Record video
 	record_video = 0;
 	rec_slider = 0;
 	rec_slider_max = 1;
+	
+	// Set up window with ROI and offset
 	Mat window;
 	Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
 	Vec<float,2> offset;
@@ -446,19 +414,16 @@ int main(){
 	createTrackbar("Bin Threshold", "control", &bin_threshold_slider, bin_threshold_slider_max, bin_threshold_trackbar);
 	createTrackbar("Display Video","control",&video_display_slider, video_display_slider_max, video_display_trackbar);
 	createTrackbar("Record","control",&rec_slider,rec_slider_max,rec_trackbar);
-	//createTrackbar("Run Program","control",&run_program_slider,run_program_slider_max,run_program_trackbar);
+	
 	sw.Start(); // start timer
 	char key = 0;
 	
 	int reset = 1000;
 	int iter = 0;
+
+	// This is the main loop for the funcion
 	while(key != 'q'){
 		
-		if (key == 'c'){
-			char k = 0;
-			
-		}
-
 		//start timer
 		Image rawImage;
 		Error error = camera.RetrieveBuffer( &rawImage );
@@ -476,18 +441,19 @@ int main(){
 		// convert to gray	
 		Mat image_gray;
 		image_gray = image(myROI);
-
+		
+		// Pre-process
 		cvtColor( image_gray, image_gray, CV_BGR2GRAY);
-		//medianBlur(image_gray,image_gray,med_blur);
 		blur(image_gray,image_gray,Size(med_blur,med_blur));
-
 		threshold(image_gray, image_gray, bin_threshold, 255, THRESH_BINARY);
 		GaussianBlur( image_gray, image_gray, Size(9, 9), 2, 2);
+
+
+		// Apply Hough Transform to find circles
 		vector<Vec3f> circles;
-		
-				
-		//Apply the Hough Transform to find the circles
 		HoughCircles( image_gray, circles, CV_HOUGH_GRADIENT, dp, min_dist, canny_threshold, center_threshold, min_radius, max_radius);
+		
+
 		//Draw circles detected
 		float x=0;
 		float y=0;
@@ -522,12 +488,11 @@ int main(){
 			centerY = 0;
 		}	
 		
-		
+		// Record the video - this is slow!!
 		if (record_video == 1){
 			vid.write(image);
 			sw.Stop();
 	                delay = sw.GetDuration();
-        	        save_file << centerX << "," << centerY << "," << delay << endl;
 		}
 		
 
@@ -538,13 +503,11 @@ int main(){
 			}
 		}
 		
-//		if (run_program==0){
-//			return 0;
-//		}
+
+		
 		key = waitKey(1);
+        	save_file << centerX << "," << centerY << "," << delay << endl;
 		sw.Start(); // restart timer
 	}
-
-
 
 }
