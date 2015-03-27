@@ -160,7 +160,7 @@ int main(void){
   //chanlist[1] = CR_PACK(options.channel + 1, options.range,
 
   dump_cmd(stdout,&cmd);
-
+  
 
 
 	// set up socket and listen
@@ -204,18 +204,20 @@ int main(void){
 	else{
 		std::cout << "Connection accepted. Using new socketfd: " << new_sd << std::endl;
 	}
-
-	int buffer_size = 100;
+	
+	
+	float xmax = 1200;
+	float ymax = 850;
+	int buffer_size = 30;
 	int last;
 	ssize_t bytes_recieved;
-	const char* incomming_data_buffer[buffer_size];
+	char incomming_data_buffer[buffer_size];
 	int separator;
 	for(;;){
-		bytes_recieved = recv(new_sd, incomming_data_buffer,1000, 0);
+		bytes_recieved = recv(new_sd, incomming_data_buffer, buffer_size, 0);
 		
-		std::cout << "1" << std::endl;
 
-		if (incomming_data_buffer[0] == "q"){
+		if (incomming_data_buffer[0] == 'q'){
 			std::cout << "Eye-tracker closed" << std::endl;
 			freeaddrinfo(host_info_list);
 			shutdown(new_sd,2);
@@ -223,38 +225,33 @@ int main(void){
 			return 0;
 		}
 		else{
-		        // parse incomming data buffer
+			// parse incomming data buffer
 	                for (int i = 0; i < buffer_size; i = i+1){
-        	                if (incomming_data_buffer[i]==",");
-                	        separator = i;
+        	                if (incomming_data_buffer[i]==','){
+                	        	separator = i;
+				}
                 	}
-			std::cout << "2" << std::endl;
-                	const char* first[separator];
-              		const char* last[100-separator];
+                	char first[separator];
+              		char last[100-separator];
 			for (int i=0; i<separator; i = i+1){
 				first[i]=incomming_data_buffer[i];
 			}
-			std::cout << "3" << std::endl;
-			for (int i=0; i<100-separator; i=i+1){
+			
+			for (int i=0; i<buffer_size-separator; i=i+1){
 				last[i] = incomming_data_buffer[i+separator+1];
 			}
-			std::cout << "4" << std::endl;
-	                std::cout << incomming_data_buffer[0] << std::endl;
-			std::cout << last[0] << std::endl;
-			//std::copy(incomming_data_buffer + 0, incomming_data_buffer + separator, first);
-	                //std::copy(incomming_data_buffer + (100-separator), incomming_data_buffer + 99, last);
 			
-			//std::string fir = first;
-			//std::string las = last;
+	
+			float f = std::atof (first);
+			float l = std::atof (last);
 			
-			float f = std::atof (first[0]);
-			float l = std::atof (last[0]);
-			std::cout << "5" << std::endl;
-
-			write(comedi_fileno(dev),(void *)&(f),sizeof(float));
 			std::cout << f << std::endl;
-			std::cout << "6" << std::endl;
-			//std::cout << incomming_data_buffer << std::endl;
+			std::cout << l << std::endl;
+			
+			float xpos = f/xmax;
+			float ypos = l/ymax;
+			
+			write(comedi_fileno(dev),(void *)&(xpos),sizeof(float));
 		}
 	}
 
