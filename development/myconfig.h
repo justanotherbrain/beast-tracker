@@ -33,7 +33,7 @@
 #define DUR 		100	/* Duration of SHM buffer in seconds */
 #define PERIOD 		7500	/* Tunable sleep paramter in acquisition loop */
 #define VERBOSE 	0	/* 0 = not verbose, 1 = verbose */
-#define COMEDI_DEVICE_STIM "/dev/comedi0"
+#define COMEDI_DEVICE_AO "/dev/comedi0"
 #define COMEDI_DEVICE_RECORD "/dev/comedi1"
 #define HIST 		SR/KHZ	/* state buffer size in elements */
 #define DT 		SR/KHZ	/* stim buffer size in elements */

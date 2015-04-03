@@ -106,6 +106,8 @@ void dump_cmd(FILE *out,comedi_cmd *cmd)
 #define CJMLEN 100
 #define BUF_LEN 0x1000
 int main(void){
+  int AMP = 4000;
+  int OFFSET = 2048;
   comedi_cmd cmd;
   int err;
   int n,m;
@@ -206,10 +208,10 @@ int main(void){
 	}
 	
 	
-	float xmax = 1200;
-	float ymax = 850;
+	float xmax = 1280;
+	float ymax = 960;
 	int buffer_size = 30;
-	int last;
+	//int last;
 	ssize_t bytes_recieved;
 	char incomming_data_buffer[buffer_size];
 	int separator;
@@ -248,8 +250,8 @@ int main(void){
 			std::cout << f << std::endl;
 			std::cout << l << std::endl;
 			
-			float xpos = f/xmax;
-			float ypos = l/ymax;
+			float xpos = (f/xmax)*AMP-OFFSET;
+			float ypos = (l/ymax)*AMP-OFFSET;
 			
 			write(comedi_fileno(dev),(void *)&(xpos),sizeof(float));
 		}
