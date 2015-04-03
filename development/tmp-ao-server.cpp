@@ -12,7 +12,7 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <cstdlib>
-#include "/usr/local/src/new/comedilib/demo/examples.h"
+//#include "/usr/local/src/new/comedilib/demo/examples.h"
 #include "myconfig.h"
 
 #include <iostream>
@@ -21,7 +21,8 @@
 #include <netdb.h>
 #include <array>
 
-//comedi_t *dev;
+comedi_t *dev;
+#define SAMPLE_CT 100
 
 // Initialize xpos
 float xpos = 0;
@@ -46,7 +47,7 @@ const char *comdevice = COMEDI_DEVICE_AO;
 
 int external_trigger_number = 0;
 
-sampl_t data[BUF_LEN];
+sampl_t data[SAMPLE_CT];
 
 void dds_output(sampl_t *buf,int n);
 void dds_init(double waveform_frequency, double update_frequency, int fn);
@@ -67,6 +68,30 @@ struct parsed_options_hold{
   double freq;
 };
 
+
+
+char *cmd_src(int src,char *buf)
+{
+        buf[0]=0;
+
+        if(src&TRIG_NONE)strcat(buf,"none|");
+        if(src&TRIG_NOW)strcat(buf,"now|");
+        if(src&TRIG_FOLLOW)strcat(buf, "follow|");
+        if(src&TRIG_TIME)strcat(buf, "time|");
+        if(src&TRIG_TIMER)strcat(buf, "timer|");
+        if(src&TRIG_COUNT)strcat(buf, "count|");
+        if(src&TRIG_EXT)strcat(buf, "ext|");
+        if(src&TRIG_INT)strcat(buf, "int|");
+        if(src&TRIG_OTHER)strcat(buf, "other|");
+
+        if(strlen(buf)==0){
+                sprintf(buf,"unknown(0x%08x)",src);
+        }else{
+                buf[strlen(buf)-1]=0;
+        }
+
+        return buf;
+}
 
 void dump_cmd(FILE *out,comedi_cmd *cmd)
 {
@@ -96,35 +121,12 @@ void dump_cmd(FILE *out,comedi_cmd *cmd)
                 cmd->stop_arg);
 }
 
-char *cmd_src(int src,char *buf)
-{
-        buf[0]=0;
 
-        if(src&TRIG_NONE)strcat(buf,"none|");
-        if(src&TRIG_NOW)strcat(buf,"now|");
-        if(src&TRIG_FOLLOW)strcat(buf, "follow|");
-        if(src&TRIG_TIME)strcat(buf, "time|");
-        if(src&TRIG_TIMER)strcat(buf, "timer|");
-        if(src&TRIG_COUNT)strcat(buf, "count|");
-        if(src&TRIG_EXT)strcat(buf, "ext|");
-        if(src&TRIG_INT)strcat(buf, "int|");
-        if(src&TRIG_OTHER)strcat(buf, "other|");
-
-        if(strlen(buf)==0){
-                sprintf(buf,"unknown(0x%08x)",src);
-        }else{
-                buf[strlen(buf)-1]=0;
-        }
-
-        return buf;
-}
-
-
-int comedi_internal_trigger(comedi_t *dev, unsigned int subd, unsigned
+int comedi_internal_trigger(unsigned int subd, unsigned
 int trignum)
 {
   comedi_insn insn;
-  lsampl_t data[BUF_LEN];
+  lsampl_t data[1];
 
   memset(&insn, 0, sizeof(comedi_insn));
   insn.insn = INSN_INTTRIG;
@@ -149,7 +151,7 @@ int main(int argc, char *argv[])
 	comedi_cmd cmd;
 	int err;
 	int n,m, i;
-	int total=0, n_chan = 0, freq = 1e3;
+	int total=0, n_chan = 0, freq = 80000;
 	int subdevice = -1;
 	int verbose = 0;
 	comedi_t *dev;
@@ -200,8 +202,8 @@ int main(int argc, char *argv[])
 	cmd.convert_arg = 0;
 	cmd.scan_end_src = TRIG_COUNT;
 	cmd.scan_end_arg = n_chan;
-	cmd.stop_src = TRIG_NONE;
-	cmd.stop_arg = 0;
+	cmd.stop_src = TRIG_COUNT;
+	cmd.stop_arg = SAMPLE_CT;
 
 	cmd.chanlist = chanlist;
 	cmd.chanlist_len = n_chan;
@@ -231,12 +233,12 @@ int main(int argc, char *argv[])
 	}
 
 	//dds_output(data,BUF_LEN);
-	n = BUF_LEN * sizeof(sampl_t);
-	data[BUF_LEN - 1] = offset;
-	for(i=0; i<1000; i++){
-		if(i%1000 < 500)
+	n = SAMPLE_CT * sizeof(sampl_t);
+	data[SAMPLE_CT - 1] = offset;
+	for(i=0; i<SAMPLE_CT; i++){
+		if(i%10 < 5)
 			data[i]=rint(offset);
-		else if(i%1000 >=500)
+		else if(i%10 >=5)
 			data[i]=rint(offset+amplitude);
 	}
 	m = write(comedi_fileno(dev), (void *)data, n);
@@ -258,6 +260,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	
+	comedi_cancel(dev,subdevice);
 	
         // set up socket and listen
         int status;
@@ -305,7 +308,6 @@ int main(int argc, char *argv[])
         float xmax = 1280;
         float ymax = 960;
         int buffer_size = 30;
-        //int last;
         ssize_t bytes_recieved;
         char incomming_data_buffer[buffer_size];
         int separator;
@@ -346,27 +348,46 @@ int main(int argc, char *argv[])
                         ypos = (l/ymax)*amplitude+offset;
 			
 //			std::cout << xpos << std::endl;
-			
-			dds_output(data,BUF_LEN);
-			n=BUF_LEN*sizeof(sampl_t);
-
-        		data[BUF_LEN - 1] = offset;
-        		for(i=0; i<1000; i++){
+			//dds_output(data,BUF_LEN);
+	        	err = comedi_command(dev, &cmd);
+			assert(err >= 0);
+			n = SAMPLE_CT * sizeof(sampl_t);
+	        	data[SAMPLE_CT - 1] = offset;
+		        for(i=0; i<sizeof(data); i++){
+				data[i] = xpos;
+//                		if(i%10 < 5)
+//        		                data[i]=rint(offset);
+//	                	else if(i%10 >=5)
+//        	                	data[i]=rint(offset+amplitude);
+		        }
+			std::cout << data[0] << std::endl;
+			std::cout << data[6] << std::endl;
+        		m = write(comedi_fileno(dev), (void *)data, n);
+			assert(m==n);
+			ret = comedi_internal_trigger(dev,subdevice,0);
+			usleep(1.1e3);
+			comedi_cancel(dev,subdevice);
+//			dds_output(data,BUF_LEN);
+//			n=BUF_LEN*sizeof(sampl_t);
+//
+//       		data[BUF_LEN - 1] = offset;
+//        		for(i=0; i<1000; i++){
 //                        	data[i]=rint(xpos);
-		                if(i%1000 < 500)
-                		        data[i]=rint(offset);
-		                else if(i%1000 >=500)
-	               		        data[i]=rint(offset+amplitude);
-        		}
-			std::cout << xpos << std::endl;
-        		
-			m = write(comedi_fileno(dev), (void *)data, n);
-			ret = comedi_internal_trigger(dev, subdevice, 0);
-			if (m<0){
-				perror("write");
-				exit(0);
-			}
-			usleep(1.1e4);
+//		                if(i%1000 < 500)
+//                		        data[i]=rint(offset);
+//		                else if(i%1000 >=500)
+//	               		        data[i]=rint(offset+amplitude);
+//        		}
+//			std::cout << data[0] << std::endl;
+//        		
+//			m = write(comedi_fileno(dev), (void *)data, n);
+//			ret = comedi_internal_trigger(dev, subdevice, 0);
+		        //if(ret < 0){
+		        //        perror("comedi_internal_trigger\n");
+		        //        exit(1);
+		        //}
+
+			//usleep(1.1e4);
 			//assert(ret>=0);
 			//comedi_cancel(dev, subdevice);
 			//assert(err >= 0);
