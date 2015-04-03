@@ -400,7 +400,8 @@ int main(){
 		}
 	}
 	destroyWindow("set");
-	
+
+
 	// Initialize variables for sliders
 	
 	int dp = 1;
@@ -582,12 +583,18 @@ int main(){
 		
 		if (stream_data == 1){
 			std::stringstream sstm;
-			sstm << centerX << "," << centerY << "," << delay << endl;
+			sstm << centerX << "," << centerY << endl;
 			const std::string stmp = sstm.str();
 			const char* msg = stmp.c_str();
 			client.sendMessage(msg);
 		}
 
 	}
+	
+	std::stringstream quit;
+	quit << 'q';
+	const std::string qt = quit.str();
+	const char* q = qt.c_str();
+	client.sendMessage(q);
 
 }
