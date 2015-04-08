@@ -21,7 +21,7 @@
 #include <array>
 
 comedi_t *dev;
-#define SAMPLE_CT 100
+#define SAMPLE_CT 5 // this is about as short as you can make it
 
 // Initialize xpos
 float xpos = 0;
@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
         		m = write(comedi_fileno(dev), (void *)data, n);
 			assert(m==n);
 			ret = comedi_internal_trigger(dev,subdevice,0);
-			usleep(1.1e3);
+			usleep(1.1e1);
 			comedi_cancel(dev,subdevice);
 		}
 	}
