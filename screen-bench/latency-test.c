@@ -29,10 +29,13 @@ int toContinue()
 }
 
 int main (int argc, char **argv){
-  float LASER_THRESHOLD = -.02;
+  float DIODE_THRESHOLD = -.02;
   float XPOS_THRESHOLD = .1;
   FILE *f;
+  FILE *raw;
+
   f = fopen("data.txt","a");
+  raw = fopen("raw.csv","a");
 
   usb_dev_handle *udev = NULL;
 
@@ -71,23 +74,34 @@ int main (int argc, char **argv){
   while(!key) {
     l = usbAIn_USB20X(udev, CH0);
     vl = volts_USB20X(udev,l);
-    
-    if (vl < LASER_THRESHOLD) {
+    p = usbAIn_USB20X(udev, CH1);
+    vp = volts_USB20X(udev, p);
+    fprintf(raw,"%f, %f, %f \n",vl,vp,(float)clock());
+
+    if (vl < DIODE_THRESHOLD) {
       clock_t start = clock(), diff;
       while(vp < XPOS_THRESHOLD){
+	l = usbAIn_USB20X(udev, CH0);
+	vl = volts_USB20X(udev,l);
         p = usbAIn_USB20X(udev, CH1);
         vp = volts_USB20X(udev,p);
+	fprintf(raw,"%f, %f, %f \n",vl,vp,(float)clock());
       }
       diff = clock() - start;
       float d = (float)diff * 1000 / CLOCKS_PER_SEC;
       printf("%f \n",d);
-      fprintf(f,"%f,",d);
+      fprintf(f,"%f, ",d);
       fclose(f);
-      f = fopen("data.txt","a");
+      f = fopen("time.csv","a");
       while(vp > XPOS_THRESHOLD){
+	l = usbAIn_USB20X(udev, CH0);
+	vl = volts_USB20X(udev, l);
         p = usbAIn_USB20X(udev, CH1);
         vp = volts_USB20X(udev, p);
+	fprintf(raw,"%f, %f, %f \n",vl,vp,(float)clock());
       }
+      fclose(raw);
+      raw = fopen("raw.csv","a");
     }
   }
   return 0;
