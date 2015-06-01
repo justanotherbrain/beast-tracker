@@ -415,7 +415,8 @@ int main(){
 	int subdevicey = -1;
         int verbose = 0;
         comedi_t *dev;
-        unsigned int chanlist[16];
+        unsigned int chanlistx[16];
+	unsigned int chanlisty[16];
         unsigned int maxdata;
         comedi_range *rng;
         int ret;
@@ -423,7 +424,8 @@ int main(){
         int fn;
         int aref = AREF_GROUND;
         int range = 0;
-        int channel = 0;
+        int channelx = 0;
+	int channely = 1;
         int buffer_length;
         subdevicex = -1;
 	subdevicey = -1;
@@ -452,7 +454,7 @@ int main(){
         assert(subdevicex >= 0);
 		
 	if(subdevicey <0)
-		subdevicey = comedi_find_subdevice_by_type(devy, COMEDI_SUBD_AO, 2);
+		subdevicey = comedi_find_subdevice_by_type(devy, COMEDI_SUBD_AO, 0);
 	assert(subdevicey >= 0);
 	
 
@@ -478,7 +480,7 @@ int main(){
         cmd.stop_src = TRIG_COUNT;
         cmd.stop_arg = SAMPLE_CT;
 
-        cmd.chanlist = chanlist;
+        cmd.chanlist = chanlistx;
         cmd.chanlist_len = n_chan;
 
 
@@ -495,12 +497,13 @@ int main(){
         cmdy.scan_end_arg = n_chan;
         cmdy.stop_src = TRIG_COUNT;
         cmdy.stop_arg = SAMPLE_CT;
-	cmdy.chanlist = chanlist;
+	cmdy.chanlist = chanlisty;
 	cmdy.chanlist_len = n_chan;
 	
 
-        chanlist[0] = CR_PACK(channel, range, aref);
-        
+        chanlistx[0] = CR_PACK(channelx, range, aref);
+	chanlisty[0] = CR_PACK(channely, range, aref);        
+
 	if (verbose)
                 dump_cmd(stdout,&cmd);
 
