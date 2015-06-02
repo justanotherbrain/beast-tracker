@@ -59,7 +59,7 @@ const char *comdevice2 = COMEDI_DEVICE_AO;
 
 int external_trigger_number = 0;
 
-
+sampl_t datall[2][SAMPLE_CT];
 sampl_t datax[SAMPLE_CT];
 sampl_t datay[SAMPLE_CT];
 
@@ -129,6 +129,8 @@ void dump_cmd(FILE *out,comedi_cmd *cmd)
                 cmd_src(cmd->stop_src,buf),
                 cmd->stop_arg);
 }
+
+int comedi_internal_triggerx(unsigned int subd, unsigned int 
 
 int comedi_internal_triggerx(unsigned int subd, unsigned
 int trignum)
@@ -417,7 +419,7 @@ int main(){
         int subdevicex = -1;
 	int subdevicey = -1;
         int verbose = 0;
-        unsigned int chanlistx[1];
+        unsigned int chanlistx[2];
 	unsigned int chanlisty[1];
         unsigned int maxdata_x;
         unsigned int maxdata_y;
@@ -439,7 +441,7 @@ int main(){
         /* fn = n_chan; */
 
         /* Force n_chan to be 1 */
-        n_chan = 1;
+        n_chan = 2;
 
         devx = comedi_open(comdevice);
 	devy = comedi_open(comdevice2);
@@ -464,13 +466,13 @@ int main(){
 
 	cout << subdevicex << "," << subdevicey << endl;
         
-	maxdata_x = comedi_get_maxdata(devx, subdevicex, 0);
-        rng_x = comedi_get_range(devx, subdevicex, 0, 0);
+	maxdata_x = comedi_get_maxdata(devx, subdevicex, channelx);
+        rng_x = comedi_get_range(devx, subdevicex, channelx, 0);
         fudge_x = (double)comedi_from_phys(0.0, rng_x, maxdata_x);
         amplitude_x = (double)comedi_from_phys(1.0, rng_x, maxdata_x) - fudge_x;
 
-        maxdata_y = comedi_get_maxdata(devy, subdevicey, 0);
-        rng_y = comedi_get_range(devy, subdevicey, 0, 0);
+        maxdata_y = comedi_get_maxdata(devy, subdevicey, channely);
+        rng_y = comedi_get_range(devy, subdevicey, channely, 0);
         fudge_y = (double)comedi_from_phys(0.0, rng_y, maxdata_y);
         amplitude_y = (double)comedi_from_phys(1.0, rng_y, maxdata_y) - fudge_y;
 
@@ -489,6 +491,7 @@ int main(){
         cmdx.stop_src = TRIG_COUNT;
         cmdx.stop_arg = SAMPLE_CT;
         chanlistx[0] = CR_PACK(channelx, range, aref);
+	chanlistx[1] = CR_PACK(channely, range, aref);
         cmdx.chanlist = chanlistx;
         cmdx.chanlist_len = n_chan;
 
@@ -854,8 +857,6 @@ int main(){
 		ypos = (centerY/ymax)*amplitude_y+fudge_y;
 		
                 
-                err = comedi_command(devy, &cmdy);
-		err = comedi_command(devx, &cmdx);
 		//assert(err >= 0);
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //datax[SAMPLE_CT - 1] = fudge_x;
@@ -863,18 +864,26 @@ int main(){
                 for(i=0; i<sizeof(datax); i++){
                         datax[i] = xpos;
 			datay[i] = ypos;
+			datall[0][i]=xpos;
+			datall[1][i]=ypos;
                 }
                 std::cout <<  "\r" << xpos << "," << ypos << std::flush;
-                m = write(comedi_fileno(devx), (void *)datax, n);
-		m = write(comedi_fileno(devy), (void *)datay, n);
-                //assert(m==n);
+		
+		/*err = comedi_command(devx, &cmdx);
+		m = write(comedi_fileno(devx), (void *)datax, n);
                 ret = comedi_internal_trigger(devx,subdevicex,0);
-		ret = comedi_internal_trigger(devy,subdevicey,0);
-		//ret = comedi_internal_triggerx(subdevicex,0);
+		
+		err = comedi_command(devy, &cmdy);
+		m = write(comedi_fileno(devy), (void *)datay, n);
+		ret = comedi_internal_trigger(devy,subdevicey,0);*/
 		//ret = comedi_internal_triggery(subdevicey,0);
-                usleep(1.1e1);
-                comedi_cancel(devx,subdevicex);
-		comedi_cancel(devy,subdevicey);
+                err = comedi_command(devx, &cmdx);
+		//m = write(comedi_fileno(devx), (void *)datall, n);
+		ret = comedi_internal_trigger(devx,subdevicex,0);
+		usleep(1.1e1);
+		comedi_cancel(devx, subdevicex);
+               /* comedi_cancel(devx,subdevicex);
+		comedi_cancel(devy,subdevicey);*/
 
 		// Record the video - this is slow!!
 		if (record_video == 1){
