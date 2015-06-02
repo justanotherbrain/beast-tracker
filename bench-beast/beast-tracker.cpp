@@ -30,7 +30,7 @@
 #include <assert.h>
 #include <sys/mman.h>
 #include <cstdlib>
-#include "myconfig.h"
+//#include "eye_tracker_config.h"
 
 #include <netdb.h>
 
@@ -43,13 +43,16 @@ comedi_t *devx;
 comedi_t *devy;
 #define SAMPLE_CT 5 // about as short as you can get
 #define BUF_LEN 0x8000
+#define COMEDI_DEVICE_AO "/dev/comedi0"
 
 // initialize positions
 float xpos = 0;
 float ypos = 0;
 
-double amplitude = 4000;
-double fudge = 2048;
+double amplitude_x = 4000;
+double amplitude_y = 4000;
+double fudge_x = 2048;
+double fudge_y = 2048;
 
 const char *comdevice = COMEDI_DEVICE_AO;
 const char *comdevice2 = COMEDI_DEVICE_AO;
@@ -406,7 +409,7 @@ void stream_data_trackbar(int,void*){
 // This program will track the eye
 int main(){
 	// Setup comedi
-        comedi_cmd cmd;
+        comedi_cmd cmdx;
 	comedi_cmd cmdy;
         int err;
         int n,m, i;
@@ -414,11 +417,12 @@ int main(){
         int subdevicex = -1;
 	int subdevicey = -1;
         int verbose = 0;
-        comedi_t *dev;
-        unsigned int chanlistx[16];
-	unsigned int chanlisty[16];
-        unsigned int maxdata;
-        comedi_range *rng;
+        unsigned int chanlistx[1];
+	unsigned int chanlisty[1];
+        unsigned int maxdata_x;
+        unsigned int maxdata_y;
+        comedi_range *rng_x;
+        comedi_range *rng_y;
         int ret;
         //struct parsed_options options;
         int fn;
@@ -429,10 +433,10 @@ int main(){
         int buffer_length;
         subdevicex = -1;
 	subdevicey = -1;
-        n_chan = -1;
+        /* n_chan = -1; */
 
         /* Use n_chan to select waveform (cheat!) */
-        fn = n_chan;
+        /* fn = n_chan; */
 
         /* Force n_chan to be 1 */
         n_chan = 1;
@@ -460,28 +464,33 @@ int main(){
 
 	cout << subdevicex << "," << subdevicey << endl;
         
-	maxdata = comedi_get_maxdata(devx, subdevicex, 0);
-        rng = comedi_get_range(devx, subdevicex, 0, 0);
+	maxdata_x = comedi_get_maxdata(devx, subdevicex, 0);
+        rng_x = comedi_get_range(devx, subdevicex, 0, 0);
+        fudge_x = (double)comedi_from_phys(0.0, rng_x, maxdata_x);
+        amplitude_x = (double)comedi_from_phys(1.0, rng_x, maxdata_x) - fudge_x;
 
-        fudge = (double)comedi_from_phys(0.0, rng, maxdata);
-        amplitude = (double)comedi_from_phys(1.0, rng, maxdata) - fudge;
+        maxdata_y = comedi_get_maxdata(devy, subdevicey, 0);
+        rng_y = comedi_get_range(devy, subdevicey, 0, 0);
+        fudge_y = (double)comedi_from_phys(0.0, rng_y, maxdata_y);
+        amplitude_y = (double)comedi_from_phys(1.0, rng_y, maxdata_y) - fudge_y;
 
-        memset(&cmd,0,sizeof(cmd));
-        cmd.subdev = subdevicex;
-        cmd.flags = CMDF_WRITE;
-        cmd.start_src = TRIG_INT;
-        cmd.start_arg = 0;
-        cmd.scan_begin_src = TRIG_TIMER;
-        cmd.scan_begin_arg = 1e9 / freq;
-        cmd.convert_src = TRIG_NOW;
-        cmd.convert_arg = 0;
-        cmd.scan_end_src = TRIG_COUNT;
-        cmd.scan_end_arg = n_chan;
-        cmd.stop_src = TRIG_COUNT;
-        cmd.stop_arg = SAMPLE_CT;
 
-        cmd.chanlist = chanlistx;
-        cmd.chanlist_len = n_chan;
+        memset(&cmdx,0,sizeof(cmdx));
+        cmdx.subdev = subdevicex;
+        cmdx.flags = CMDF_WRITE;
+        cmdx.start_src = TRIG_INT;
+        cmdx.start_arg = 0;
+        cmdx.scan_begin_src = TRIG_TIMER;
+        cmdx.scan_begin_arg = 1e9 / freq;
+        cmdx.convert_src = TRIG_NOW;
+        cmdx.convert_arg = 0;
+        cmdx.scan_end_src = TRIG_COUNT;
+        cmdx.scan_end_arg = n_chan;
+        cmdx.stop_src = TRIG_COUNT;
+        cmdx.stop_arg = SAMPLE_CT;
+        chanlistx[0] = CR_PACK(channelx, range, aref);
+        cmdx.chanlist = chanlistx;
+        cmdx.chanlist_len = n_chan;
 
 
         memset(&cmdy,0,sizeof(cmdy));
@@ -497,23 +506,26 @@ int main(){
         cmdy.scan_end_arg = n_chan;
         cmdy.stop_src = TRIG_COUNT;
         cmdy.stop_arg = SAMPLE_CT;
+	chanlisty[0] = CR_PACK(channely, range, aref);        
 	cmdy.chanlist = chanlisty;
 	cmdy.chanlist_len = n_chan;
 	
 
-        chanlistx[0] = CR_PACK(channelx, range, aref);
-	chanlisty[0] = CR_PACK(channely, range, aref);        
 
 	if (verbose)
-                dump_cmd(stdout,&cmd);
+                dump_cmd(stdout,&cmdx);
 
-        err = comedi_command_test(devx, &cmd);
-	err = comedi_command_test(devy, &cmdy);
+        err = comedi_command_test(devx, &cmdx);
         if (err < 0) {
-                comedi_perror("comedi_command_test");
+                comedi_perror("comedi_command_test for x channel");
                 exit(1);
         }
 
+	err = comedi_command_test(devy, &cmdy);
+        if (err < 0) {
+                comedi_perror("comedi_command_test for y channel");
+                exit(1);
+        }
 
         if ((err = comedi_command(devy, &cmdy)) < 0) {
                 comedi_perror("comedi_command");
@@ -521,13 +533,13 @@ int main(){
         }
 
         n = SAMPLE_CT * sizeof(sampl_t);
-        datax[SAMPLE_CT - 1] = fudge;
-	datay[SAMPLE_CT - 1] = fudge;
+        datax[SAMPLE_CT - 1] = fudge_x;
+	datay[SAMPLE_CT - 1] = fudge_y;
         for(i=0; i<SAMPLE_CT; i++){
                 if(i%10 < 5)
-                        datay[i]=rint(fudge);
+                        datay[i]=rint(fudge_y);
                 else if(i%10 >=5)
-                        datay[i]=rint(fudge+amplitude);
+                        datay[i]=rint(fudge_y+amplitude_y);
         }
         m = write(comedi_fileno(devy), (void *)datay, n);
         if(m < 0){
@@ -770,7 +782,7 @@ int main(){
         float ymax = 960;
 
 
-	// This is the main loop for the funcion
+	// This is the main loop for the function
 	while(key != 'q'){
 		
 		//start timer
@@ -838,16 +850,16 @@ int main(){
 		}	
 		
 
-		xpos = (centerX/xmax)*amplitude+fudge;
-		ypos = (centerY/ymax)*amplitude+fudge;
+		xpos = (centerX/xmax)*amplitude_x+fudge_x;
+		ypos = (centerY/ymax)*amplitude_y+fudge_y;
 		
                 
                 err = comedi_command(devy, &cmdy);
-		err = comedi_command(devx, &cmd);
+		err = comedi_command(devx, &cmdx);
 		//assert(err >= 0);
                 n = SAMPLE_CT * sizeof(sampl_t);
-                datax[SAMPLE_CT - 1] = fudge;
-		datay[SAMPLE_CT - 1] = fudge;
+                //datax[SAMPLE_CT - 1] = fudge_x;
+		//datay[SAMPLE_CT - 1] = fudge_y;
                 for(i=0; i<sizeof(datax); i++){
                         datax[i] = xpos;
 			datay[i] = ypos;
