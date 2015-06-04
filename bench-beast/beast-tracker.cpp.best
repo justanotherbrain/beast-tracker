@@ -105,6 +105,7 @@ char *cmd_src(int src,char *buf)
 }
 
 
+// Behold, the most beautiful piece of code in Rabadi's young life
 int comedi_internal_trigger_cust(comedi_t* device, int subdevice, int channelx, int channely, lsampl_t* dataxl, lsampl_t* datayl, int range, int aref)
 {
    
@@ -113,18 +114,16 @@ int comedi_internal_trigger_cust(comedi_t* device, int subdevice, int channelx, 
   
   il.n_insns=2;
   il.insns=insn;
-  //lsampl_t datax[SAMPLE_CT];
-  //lsampl_t datay[SAMPLE_CT];
 
   memset(&insn[0], 0, sizeof(comedi_insn));
-  insn[0].insn = INSN_WRITE; //INSN_INTTRIG
+  insn[0].insn = INSN_WRITE;
   insn[0].subdev = subdevice;
   insn[0].data = dataxl;
-  insn[0].n = SAMPLE_CT;
+  insn[0].n = SAMPLE_CT; // SAMPLE_CT
   insn[0].chanspec = CR_PACK(channelx,range,aref);
 
   memset(&insn[1], 0, sizeof(comedi_insn));
-  insn[1].insn = INSN_WRITE; //INSN_INTTRIG
+  insn[1].insn = INSN_WRITE;
   insn[1].subdev = subdevice;
   insn[1].data = datayl;
   insn[1].n = SAMPLE_CT;
@@ -428,12 +427,7 @@ int main(){
         int buffer_length;
         subdevicex = -1;
 	subdevicey = -1;
-        /* n_chan = -1; */
 
-        /* Use n_chan to select waveform (cheat!) */
-        /* fn = n_chan; */
-
-        /* Force n_chan to be 1 */
         n_chan = 2;
 
         devx = comedi_open(comdevice);
@@ -889,16 +883,19 @@ int main(){
 		}	
 		
 
-		xpos = (centerX/xmax)*amplitude_x+fudge_x/2;
-		ypos = (centerY/ymax)*amplitude_y+fudge_y/2;
-	
+		xpos = (centerX/xmax)*amplitude_x+(fudge_x);
+		ypos = (centerY/ymax)*amplitude_y+(fudge_y);
+		//xpos = (centerX/xmax)*amplitude_x;
+		//ypos = (centerY/ymax)*amplitude_y;
+
+
 		//assert(err >= 0);
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //datax[SAMPLE_CT - 1] = fudge_x;
 		//datay[SAMPLE_CT - 1] = fudge_y;
-                for(i=0; i<sizeof(datax); i++){
-                        datax[i] = xpos;
-			datay[i] = ypos;
+                for(i=0; i<sizeof(dataxl); i++){
+                        //datax[i] = xpos;
+			//datay[i] = ypos;
 			dataxl[i] = xpos;
 			datayl[i] = ypos;
 			//datall[0][i]=xpos;
