@@ -63,6 +63,9 @@ sampl_t datall[2][SAMPLE_CT];
 sampl_t datax[SAMPLE_CT];
 sampl_t datay[SAMPLE_CT];
 
+lsampl_t dataxl[SAMPLE_CT];
+lsampl_t datayl[SAMPLE_CT];
+
 struct parsed_options_hold{
   char filename[256];
   double value;
@@ -102,6 +105,35 @@ char *cmd_src(int src,char *buf)
 }
 
 
+int comedi_internal_trigger_cust(comedi_t* device, int subdevice, int channelx, int channely, lsampl_t* dataxl, lsampl_t* datayl, int range, int aref)
+{
+   
+  comedi_insn insn[2];
+  comedi_insnlist il;
+  
+  il.n_insns=2;
+  il.insns=insn;
+  //lsampl_t datax[SAMPLE_CT];
+  //lsampl_t datay[SAMPLE_CT];
+
+  memset(&insn[0], 0, sizeof(comedi_insn));
+  insn[0].insn = INSN_WRITE; //INSN_INTTRIG
+  insn[0].subdev = subdevice;
+  insn[0].data = dataxl;
+  insn[0].n = SAMPLE_CT;
+  insn[0].chanspec = CR_PACK(channelx,range,aref);
+
+  memset(&insn[1], 0, sizeof(comedi_insn));
+  insn[1].insn = INSN_WRITE; //INSN_INTTRIG
+  insn[1].subdev = subdevice;
+  insn[1].data = datayl;
+  insn[1].n = SAMPLE_CT;
+  insn[1].chanspec = CR_PACK(channely,range,aref);
+
+  return comedi_do_insnlist(device, &il);
+}
+
+
 void dump_cmd(FILE *out,comedi_cmd *cmd)
 {
         char buf[10];
@@ -129,45 +161,6 @@ void dump_cmd(FILE *out,comedi_cmd *cmd)
                 cmd_src(cmd->stop_src,buf),
                 cmd->stop_arg);
 }
-
-int comedi_internal_triggerx(unsigned int subd, unsigned int 
-
-int comedi_internal_triggerx(unsigned int subd, unsigned
-int trignum)
-{
-  comedi_insn insn;
-  lsampl_t data[1];
-
-  memset(&insn, 0, sizeof(comedi_insn));
-  insn.insn = INSN_INTTRIG;
-  insn.subdev = subd;
-  insn.data = data;
-  insn.n = 1;
-
-  datax[0] = trignum;
-
-  return comedi_do_insn(devx, &insn);
-}
-
-
-int comedi_internal_triggery(unsigned int subd, unsigned
-int trignum)
-{
-  comedi_insn insn;
-  lsampl_t data[1];
-
-  memset(&insn, 0, sizeof(comedi_insn));
-  insn.insn = INSN_INTTRIG;
-  insn.subdev = subd;
-  insn.data = data;
-  insn.n = 1;
-
-  datay[0] = trignum;
-
-  return comedi_do_insn(devy, &insn);
-}
-
-
 
 
 
@@ -451,7 +444,7 @@ int main(){
         }
 	
 	if(devy == NULL){
-		fprintf(stderr,"error opening %s\n", comdevice);
+		fprintf(stderr,"error opening %s\n", comdevice2);
 		return -1;
 	}
 	
@@ -464,7 +457,6 @@ int main(){
 	assert(subdevicey >= 0);
 	
 
-	cout << subdevicex << "," << subdevicey << endl;
         
 	maxdata_x = comedi_get_maxdata(devx, subdevicex, channelx);
         rng_x = comedi_get_range(devx, subdevicex, channelx, 0);
@@ -477,6 +469,7 @@ int main(){
         amplitude_y = (double)comedi_from_phys(1.0, rng_y, maxdata_y) - fudge_y;
 
 
+	/*
         memset(&cmdx,0,sizeof(cmdx));
         cmdx.subdev = subdevicex;
         cmdx.flags = CMDF_WRITE;
@@ -493,13 +486,35 @@ int main(){
         chanlistx[0] = CR_PACK(channelx, range, aref);
 	chanlistx[1] = CR_PACK(channely, range, aref);
         cmdx.chanlist = chanlistx;
-        cmdx.chanlist_len = n_chan;
+	cmdx.chanlist_len = n_chan;
+	*/
+
+	/*
+	n_chan = 1;
+
+	memset(&cmdx,0,sizeof(cmdx));
+        cmdx.subdev = subdevicex; 
+        cmdx.flags = CMDF_WRITE;
+        cmdx.start_src = TRIG_INT; //trig_int
+        cmdx.start_arg = 0;
+        cmdx.scan_begin_src = TRIG_TIMER; //trig_timer
+        cmdx.scan_begin_arg = 1e9 / freq;
+        cmdx.convert_src = TRIG_NOW;
+        cmdx.convert_arg = 0;
+        cmdx.scan_end_src = TRIG_COUNT;
+        cmdx.scan_end_arg = n_chan;
+        cmdx.stop_src = TRIG_COUNT;
+        cmdx.stop_arg = SAMPLE_CT;
+        chanlistx[0] = CR_PACK(channelx, range, aref);
+        cmdx.chanlist = chanlistx;        
+	cmdx.chanlist_len = n_chan;
+		
 
 
-        memset(&cmdy,0,sizeof(cmdy));
-        cmdy.subdev = subdevicey;
+	memset(&cmdy,0,sizeof(cmdy));
+        cmdy.subdev = subdevicey; //subdevicey
         cmdy.flags = CMDF_WRITE;
-        cmdy.start_src = TRIG_INT;
+        cmdy.start_src = TRIG_INT; //TRIG_INT
         cmdy.start_arg = 0;
         cmdy.scan_begin_src = TRIG_TIMER;
         cmdy.scan_begin_arg = 1e9 / freq;
@@ -512,29 +527,46 @@ int main(){
 	chanlisty[0] = CR_PACK(channely, range, aref);        
 	cmdy.chanlist = chanlisty;
 	cmdy.chanlist_len = n_chan;
+	*/
 	
 
-
+	/*
 	if (verbose)
                 dump_cmd(stdout,&cmdx);
 
-        err = comedi_command_test(devx, &cmdx);
+        err = comedi_command_test(devx, &cmdx); //devx
         if (err < 0) {
                 comedi_perror("comedi_command_test for x channel");
-                exit(1);
+                std::cout << err << std::endl;
+		exit(1);
         }
+	*/
 
+	/*
 	err = comedi_command_test(devy, &cmdy);
         if (err < 0) {
                 comedi_perror("comedi_command_test for y channel");
                 exit(1);
         }
+	*/
 
+	/*
+        if ((err = comedi_command(devx, &cmdx)) < 0) {
+                comedi_perror("comedi_command x");
+                std::cout << err << std::endl;
+		exit(1);
+        }
+	*/
+
+	/*
         if ((err = comedi_command(devy, &cmdy)) < 0) {
-                comedi_perror("comedi_command");
+                comedi_perror("comedi_command y");
                 exit(1);
         }
 
+	*/
+	
+	/*
         n = SAMPLE_CT * sizeof(sampl_t);
         datax[SAMPLE_CT - 1] = fudge_x;
 	datay[SAMPLE_CT - 1] = fudge_y;
@@ -544,7 +576,10 @@ int main(){
                 else if(i%10 >=5)
                         datay[i]=rint(fudge_y+amplitude_y);
         }
-        m = write(comedi_fileno(devy), (void *)datay, n);
+        */
+	
+	/*
+	m = write(comedi_fileno(devy), (void *)datay, n);
         if(m < 0){
                 perror("write");
                 exit(1);
@@ -554,6 +589,7 @@ int main(){
                         "See the --write-buffer option of comedi_config\n", n);
                 exit(1);
         }
+
         if (verbose)
                 printf("m=%d\n",m);
 
@@ -566,8 +602,8 @@ int main(){
 
         comedi_cancel(devx,subdevicex);
 	comedi_cancel(devy,subdevicey);
-
-
+	*/
+	
 	// initialize timer rec
 	double delay;
 	CStopWatch sw;
@@ -855,8 +891,7 @@ int main(){
 
 		xpos = (centerX/xmax)*amplitude_x+fudge_x;
 		ypos = (centerY/ymax)*amplitude_y+fudge_y;
-		
-                
+	
 		//assert(err >= 0);
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //datax[SAMPLE_CT - 1] = fudge_x;
@@ -864,26 +899,39 @@ int main(){
                 for(i=0; i<sizeof(datax); i++){
                         datax[i] = xpos;
 			datay[i] = ypos;
-			datall[0][i]=xpos;
-			datall[1][i]=ypos;
+			dataxl[i] = xpos;
+			datayl[i] = ypos;
+			//datall[0][i]=xpos;
+			//datall[1][i]=ypos;
                 }
                 std::cout <<  "\r" << xpos << "," << ypos << std::flush;
-		
-		/*err = comedi_command(devx, &cmdx);
+	
+		/*	
+		err = comedi_command(devx, &cmdx);
 		m = write(comedi_fileno(devx), (void *)datax, n);
                 ret = comedi_internal_trigger(devx,subdevicex,0);
 		
 		err = comedi_command(devy, &cmdy);
 		m = write(comedi_fileno(devy), (void *)datay, n);
-		ret = comedi_internal_trigger(devy,subdevicey,0);*/
-		//ret = comedi_internal_triggery(subdevicey,0);
-                err = comedi_command(devx, &cmdx);
-		//m = write(comedi_fileno(devx), (void *)datall, n);
-		ret = comedi_internal_trigger(devx,subdevicex,0);
+		ret = comedi_internal_trigger(devy,subdevicey,0);
+		
 		usleep(1.1e1);
+
 		comedi_cancel(devx, subdevicex);
-               /* comedi_cancel(devx,subdevicex);
-		comedi_cancel(devy,subdevicey);*/
+		comedi_cancel(devy, subdevicey);
+		*/
+		
+		//err = comedi_command(devx, &cmdx);	
+		//m = write(comedi_fileno(devx), (void *)datall, n);
+		ret = comedi_internal_trigger_cust(devx,subdevicex,channelx, channely,dataxl,datayl,range,aref);
+		
+		if (ret < 0){
+			comedi_perror("insn error");
+		}
+
+		usleep(1.1e1);
+		//comedi_cancel(devx,subdevicex);
+		
 
 		// Record the video - this is slow!!
 		if (record_video == 1){
