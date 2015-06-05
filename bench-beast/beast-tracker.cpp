@@ -46,8 +46,8 @@ comedi_t *devy;
 #define COMEDI_DEVICE_AO "/dev/comedi0"
 
 // initialize positions
-float xpos = 0;
-float ypos = 0;
+double xpos = 0;
+double ypos = 0;
 
 // initialize initial value of input image
 float xmax;
@@ -826,8 +826,8 @@ int main(){
 
 
 	// initialize some more variables for comedi
-        float xmax = 1280;
-        float ymax = 960;
+        //float xmax = 1280;
+        //float ymax = 960;
 
 
 	// This is the main loop for the function
@@ -903,20 +903,25 @@ int main(){
 	
 		xpos = (centerX/xmax)*(double)maxdata_x;
 		ypos = (centerY/ymax)*(double)maxdata_y;
-		//assert(err >= 0);
+		
                 n = SAMPLE_CT * sizeof(sampl_t);
-                //datax[SAMPLE_CT - 1] = fudge_x;
-		//datay[SAMPLE_CT - 1] = fudge_y;
-                for(i=0; i<sizeof(datax); i++){
-                        datax[i] = xpos;
-			datay[i] = ypos;
-			dataxl[i] = comedi_from_phys(xpos, rng_x, maxdata_x);
-			datayl[i] = comedi_from_phys(ypos, rng_y, maxdata_y);
+                //for(i=0; i<sizeof(datax); i++){
+                for (i=0; i<SAMPLE_CT; i++){
+		        //datax[i] = xpos;
+			//datay[i] = ypos;
+			//dataxl[i] = comedi_from_phys(xpos, rng_x, maxdata_x);
+			//datayl[i] = comedi_from_phys(ypos, rng_y, maxdata_y);
+			dataxl[i] = xpos;
+			datayl[i] = ypos;
 			//datall[0][i]=xpos;
 			//datall[1][i]=ypos;
                 }
                 //std::cout <<  "\r" << xpos << "," << ypos << std::flush;
+		//std::cout << "\r" << dataxl[0] << "," << datayl[0] << std::flush;
+		
 		std::cout << "\r" << dataxl[0] << "," << datayl[0] << std::flush;
+		
+
 		/*	
 		err = comedi_command(devx, &cmdx);
 		m = write(comedi_fileno(devx), (void *)datax, n);
