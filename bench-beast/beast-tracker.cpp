@@ -49,6 +49,10 @@ comedi_t *devy;
 float xpos = 0;
 float ypos = 0;
 
+// initialize initial value of input image
+float xmax;
+float ymax;
+
 double amplitude_x = 4000;
 double amplitude_y = 4000;
 double fudge_x = 2048;
@@ -460,14 +464,16 @@ int main(){
         
 	maxdata_x = comedi_get_maxdata(devx, subdevicex, channelx);
         rng_x = comedi_get_range(devx, subdevicex, channelx, 0);
-        fudge_x = (double)comedi_from_phys(0.0, rng_x, maxdata_x);
-        amplitude_x = (double)comedi_from_phys(1.0, rng_x, maxdata_x) - fudge_x;
+        //fudge_x = (double)comedi_from_phys(0.0, rng_x, maxdata_x);
+        //amplitude_x = (double)comedi_from_phys(1.0, rng_x, maxdata_x) - fudge_x;
+	//double range_x = comedi_from_phys((double)maxdata_x, rng_x, maxdata_x);
+	//amplitude_x = (double)maxdata_x - range_x;
 
         maxdata_y = comedi_get_maxdata(devy, subdevicey, channely);
         rng_y = comedi_get_range(devy, subdevicey, channely, 0);
-        fudge_y = (double)comedi_from_phys(0.0, rng_y, maxdata_y);
-        amplitude_y = (double)comedi_from_phys(1.0, rng_y, maxdata_y) - fudge_y;
-
+        //fudge_y = (double)comedi_from_phys(0.0, rng_y, maxdata_y);
+        //amplitude_y = (double)comedi_from_phys(1.0, rng_y, maxdata_y) - fudge_y;
+	//amplitude_y = (double)maxdata_y - (double)rng_y/2.0;
 
 	/*
         memset(&cmdx,0,sizeof(cmdx));
@@ -691,6 +697,9 @@ int main(){
 		unsigned int rowBytes = (double)rgbTmp.GetReceivedDataSize()/(double)rgbTmp.GetRows();
 
 		tmp = cv::Mat(rgbTmp.GetRows(),rgbTmp.GetCols(),CV_8UC3,rgbTmp.GetData(),rowBytes);
+
+		xmax = tmp.cols;		
+		ymax = tmp.rows;
 	
 		imshow("set",tmp);
 	
@@ -889,9 +898,11 @@ int main(){
 		}	
 		
 
-		xpos = (centerX/xmax)*amplitude_x+fudge_x/2;
-		ypos = (centerY/ymax)*amplitude_y+fudge_y/2;
+		//xpos = (centerX/xmax)*amplitude_x+fudge_x;
+		//ypos = (centerY/ymax)*amplitude_y+fudge_y;
 	
+		xpos = (centerX/xmax)*(double)maxdata_x;
+		ypos = (centerY/ymax)*(double)maxdata_y;
 		//assert(err >= 0);
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //datax[SAMPLE_CT - 1] = fudge_x;
@@ -899,13 +910,13 @@ int main(){
                 for(i=0; i<sizeof(datax); i++){
                         datax[i] = xpos;
 			datay[i] = ypos;
-			dataxl[i] = xpos;
-			datayl[i] = ypos;
+			dataxl[i] = comedi_from_phys(xpos, rng_x, maxdata_x);
+			datayl[i] = comedi_from_phys(ypos, rng_y, maxdata_y);
 			//datall[0][i]=xpos;
 			//datall[1][i]=ypos;
                 }
-                std::cout <<  "\r" << xpos << "," << ypos << std::flush;
-	
+                //std::cout <<  "\r" << xpos << "," << ypos << std::flush;
+		std::cout << "\r" << dataxl[0] << "," << datayl[0] << std::flush;
 		/*	
 		err = comedi_command(devx, &cmdx);
 		m = write(comedi_fileno(devx), (void *)datax, n);
