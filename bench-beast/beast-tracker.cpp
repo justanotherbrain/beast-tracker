@@ -49,6 +49,8 @@ comedi_t *devy;
 float centerX = 0;
 float centerY = 0;
 int RUNNING = 0;
+int DRAWING = 0;
+
 
 Vec<float,2> offset; 
 
@@ -354,6 +356,7 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
                         min_radius = 20;
                         min_radius_slider = 20;
                         min_radius_slider_max = max_radius_slider_max-1;
+			DRAWING = 0;
 			//coordinates[2] = boxend.x-start.x;
 			//coordinates[3] = boxend.y-start.y;
 	        	return;
@@ -369,6 +372,7 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 			temp_coord[1] = start.y;
 			//coordinates[0] = start.x;
 			//coordinates[1] = start.y;
+			DRAWING = 1;
         		return;
     		}
 	}
@@ -454,6 +458,7 @@ void centerx_trackbar(int,void*){
 	coordinates[2] = coordinates[0] + dist;
 	//Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
         offset[0] = coordinates[0];
+	centerx_slider = 0;
 }
 
 void centery_trackbar(int,void*){
@@ -461,6 +466,7 @@ void centery_trackbar(int,void*){
 	coordinates[1] = centerY - cvRound(0.5*dist);
 	coordinates[3] = coordinates[1] + dist;
 	offset[1] = coordinates[1];
+	centery_slider = 0;
 }
 
 // Main function:
@@ -523,151 +529,9 @@ int main(){
         
 	maxdata_x = comedi_get_maxdata(devx, subdevicex, channelx);
         rng_x = comedi_get_range(devx, subdevicex, channelx, 0);
-        //fudge_x = (double)comedi_from_phys(0.0, rng_x, maxdata_x);
-        //amplitude_x = (double)comedi_from_phys(1.0, rng_x, maxdata_x) - fudge_x;
-	//double range_x = comedi_from_phys((double)maxdata_x, rng_x, maxdata_x);
-	//amplitude_x = (double)maxdata_x - range_x;
-
-        maxdata_y = comedi_get_maxdata(devy, subdevicey, channely);
+        
+	maxdata_y = comedi_get_maxdata(devy, subdevicey, channely);
         rng_y = comedi_get_range(devy, subdevicey, channely, 0);
-        //fudge_y = (double)comedi_from_phys(0.0, rng_y, maxdata_y);
-        //amplitude_y = (double)comedi_from_phys(1.0, rng_y, maxdata_y) - fudge_y;
-	//amplitude_y = (double)maxdata_y - (double)rng_y/2.0;
-
-	/*
-        memset(&cmdx,0,sizeof(cmdx));
-        cmdx.subdev = subdevicex;
-        cmdx.flags = CMDF_WRITE;
-        cmdx.start_src = TRIG_INT;
-        cmdx.start_arg = 0;
-        cmdx.scan_begin_src = TRIG_TIMER;
-        cmdx.scan_begin_arg = 1e9 / freq;
-        cmdx.convert_src = TRIG_NOW;
-        cmdx.convert_arg = 0;
-        cmdx.scan_end_src = TRIG_COUNT;
-        cmdx.scan_end_arg = n_chan;
-        cmdx.stop_src = TRIG_COUNT;
-        cmdx.stop_arg = SAMPLE_CT;
-        chanlistx[0] = CR_PACK(channelx, range, aref);
-	chanlistx[1] = CR_PACK(channely, range, aref);
-        cmdx.chanlist = chanlistx;
-	cmdx.chanlist_len = n_chan;
-	*/
-
-	/*
-	n_chan = 1;
-
-	memset(&cmdx,0,sizeof(cmdx));
-        cmdx.subdev = subdevicex; 
-        cmdx.flags = CMDF_WRITE;
-        cmdx.start_src = TRIG_INT; //trig_int
-        cmdx.start_arg = 0;
-        cmdx.scan_begin_src = TRIG_TIMER; //trig_timer
-        cmdx.scan_begin_arg = 1e9 / freq;
-        cmdx.convert_src = TRIG_NOW;
-        cmdx.convert_arg = 0;
-        cmdx.scan_end_src = TRIG_COUNT;
-        cmdx.scan_end_arg = n_chan;
-        cmdx.stop_src = TRIG_COUNT;
-        cmdx.stop_arg = SAMPLE_CT;
-        chanlistx[0] = CR_PACK(channelx, range, aref);
-        cmdx.chanlist = chanlistx;        
-	cmdx.chanlist_len = n_chan;
-		
-
-
-	memset(&cmdy,0,sizeof(cmdy));
-        cmdy.subdev = subdevicey; //subdevicey
-        cmdy.flags = CMDF_WRITE;
-        cmdy.start_src = TRIG_INT; //TRIG_INT
-        cmdy.start_arg = 0;
-        cmdy.scan_begin_src = TRIG_TIMER;
-        cmdy.scan_begin_arg = 1e9 / freq;
-        cmdy.convert_src = TRIG_NOW;
-        cmdy.convert_arg = 0;
-        cmdy.scan_end_src = TRIG_COUNT;
-        cmdy.scan_end_arg = n_chan;
-        cmdy.stop_src = TRIG_COUNT;
-        cmdy.stop_arg = SAMPLE_CT;
-	chanlisty[0] = CR_PACK(channely, range, aref);        
-	cmdy.chanlist = chanlisty;
-	cmdy.chanlist_len = n_chan;
-	*/
-	
-
-	/*
-	if (verbose)
-                dump_cmd(stdout,&cmdx);
-
-        err = comedi_command_test(devx, &cmdx); //devx
-        if (err < 0) {
-                comedi_perror("comedi_command_test for x channel");
-                std::cout << err << std::endl;
-		exit(1);
-        }
-	*/
-
-	/*
-	err = comedi_command_test(devy, &cmdy);
-        if (err < 0) {
-                comedi_perror("comedi_command_test for y channel");
-                exit(1);
-        }
-	*/
-
-	/*
-        if ((err = comedi_command(devx, &cmdx)) < 0) {
-                comedi_perror("comedi_command x");
-                std::cout << err << std::endl;
-		exit(1);
-        }
-	*/
-
-	/*
-        if ((err = comedi_command(devy, &cmdy)) < 0) {
-                comedi_perror("comedi_command y");
-                exit(1);
-        }
-
-	*/
-	
-	/*
-        n = SAMPLE_CT * sizeof(sampl_t);
-        datax[SAMPLE_CT - 1] = fudge_x;
-	datay[SAMPLE_CT - 1] = fudge_y;
-        for(i=0; i<SAMPLE_CT; i++){
-                if(i%10 < 5)
-                        datay[i]=rint(fudge_y);
-                else if(i%10 >=5)
-                        datay[i]=rint(fudge_y+amplitude_y);
-        }
-        */
-	
-	/*
-	m = write(comedi_fileno(devy), (void *)datay, n);
-        if(m < 0){
-                perror("write");
-                exit(1);
-        }else if(m < n)
-        {
-                fprintf(stderr, "failed to preload output buffer with %i bytes, is it too small?\n"
-                        "See the --write-buffer option of comedi_config\n", n);
-                exit(1);
-        }
-
-        if (verbose)
-                printf("m=%d\n",m);
-
-        ret = comedi_internal_trigger(devy, subdevicey,0);
-        //ret = comedi_internal_triggerx(subdevicex,0);
-	if(ret < 0){
-                perror("comedi_internal_triggery\n");
-                exit(1);
-        }
-
-        comedi_cancel(devx,subdevicex);
-	comedi_cancel(devy,subdevicey);
-	*/
 	
 	// initialize timer rec
 	double delay;
@@ -764,7 +628,8 @@ int main(){
 		imshow("set",tmp);
 	
 	        cvSetMouseCallback("set", mouseEvent, &tmp);
-		if (temp_coord[3] != '\0'){
+		//if (temp_coord[3] != '\0'){
+		if(DRAWING==1){
 			drawBox(start, boxend, tmp);
 			imshow("set",tmp);
 		}
@@ -893,8 +758,6 @@ int main(){
 
 
 	// initialize some more variables for comedi
-        //float xmax = 1280;
-        //float ymax = 960;
 
 	RUNNING=1;
 	
@@ -967,8 +830,6 @@ int main(){
 		}	
 		
 
-		//xpos = (centerX/xmax)*amplitude_x+fudge_x;
-		//ypos = (centerY/ymax)*amplitude_y+fudge_y;
 		if (orientation == 1){	
 			xpos = (1-(centerX/xmax))*(double)maxdata_x; // invert the x
 			ypos = (centerY/ymax)*(double)maxdata_y;
@@ -980,38 +841,12 @@ int main(){
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //for(i=0; i<sizeof(datax); i++){
                 for (i=0; i<SAMPLE_CT; i++){
-		        //datax[i] = xpos;
-			//datay[i] = ypos;
-			//dataxl[i] = comedi_from_phys(xpos, rng_x, maxdata_x);
-			//datayl[i] = comedi_from_phys(ypos, rng_y, maxdata_y);
 			dataxl[i] = xpos;
 			datayl[i] = ypos;
-			//datall[0][i]=xpos;
-			//datall[1][i]=ypos;
                 }
-                //std::cout <<  "\r" << xpos << "," << ypos << std::flush;
-		//std::cout << "\r" << dataxl[0] << "," << datayl[0] << std::flush;
-		
 		std::cout << "\r" << dataxl[0] << "," << datayl[0] << std::flush;
 		
 
-		/*	
-		err = comedi_command(devx, &cmdx);
-		m = write(comedi_fileno(devx), (void *)datax, n);
-                ret = comedi_internal_trigger(devx,subdevicex,0);
-		
-		err = comedi_command(devy, &cmdy);
-		m = write(comedi_fileno(devy), (void *)datay, n);
-		ret = comedi_internal_trigger(devy,subdevicey,0);
-		
-		usleep(1.1e1);
-
-		comedi_cancel(devx, subdevicex);
-		comedi_cancel(devy, subdevicey);
-		*/
-		
-		//err = comedi_command(devx, &cmdx);	
-		//m = write(comedi_fileno(devx), (void *)datall, n);
 		ret = comedi_internal_trigger_cust(devx,subdevicex,channelx, channely,dataxl,datayl,range,aref);
 		
 		if (ret < 0){
@@ -1019,8 +854,6 @@ int main(){
 		}
 
 		usleep(1.1e1);
-		//comedi_cancel(devx,subdevicex);
-		
 
 		// Record the video - this is slow!!
 		if (record_video == 1){
@@ -1033,24 +866,24 @@ int main(){
 		if (video_display==1 or save_csv==1){
 			if (video_display==1){
 				cvSetMouseCallback("filtered",mouseEvent,&image_gray);
-				if(coordinates[3]!='\0'){
+				//if(coordinates[3]!='\0'){
+				if (DRAWING == 1){
 					drawBox(start,boxend,image_gray);
 				}
 				imshow("window",image);
 				imshow("filtered",image_gray);
-				Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
+				//Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
         			offset[0] = coordinates[0];
         			offset[1] = coordinates[1];
 
 			}
 		}
 		
-
+		Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
 		
 		
 		
 		key = waitKey(1);
-        	//save_file << centerX << "," << centerY << "," << delay << endl;
 		sw.Start(); // restart timer
 		
 	}
