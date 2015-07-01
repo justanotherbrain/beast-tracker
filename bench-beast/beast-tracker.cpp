@@ -45,6 +45,13 @@ comedi_t *devy;
 #define BUF_LEN 0x8000
 #define COMEDI_DEVICE_AO "/dev/comedi0"
 
+// extra feature crap
+float centerX = 0;
+float centerY = 0;
+int RUNNING = 0;
+
+Vec<float,2> offset; 
+
 // initialize positions
 double xpos = 0;
 double ypos = 0;
@@ -228,6 +235,7 @@ int max_solves_slider;
 int max_solves = 100;
 
 Vec<int,4> coordinates;
+Vec<int,4> temp_coord;
 float tracking_params[] = {0, 0, 0, 0};
 
 int min_dist_slider_max = 100;
@@ -261,6 +269,16 @@ int bin_threshold;
 int rec_slider_max = 1;
 int rec_slider;
 int record_video;
+
+int orientation_slider_max = 1;
+int orientation_slider;
+int orientation;
+
+int centerx_slider = 0;
+int centerx = 0;
+
+int centery_slider = 0;
+int centery = 0;
 
 int video_display_slider_max = 1;
 int video_display_slider;
@@ -298,7 +316,11 @@ const std::string currentDateTime() {
 // drawBox:
 // A simple drawing function that draws a box around the ROI during setup
 void drawBox(Point start, Point boxend, Mat& img){
-	imshow("set",img);
+	if (RUNNING == 0){
+		imshow("set",img);
+	} else {
+		imshow("filtered",img);
+	}
 	Scalar color = (255,0,0);
 	rectangle(img, start, boxend, color, 10, 8, 0);
 	return;
@@ -315,9 +337,25 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		        boxend.x = x;
 		        boxend.y = y;
 		        cv::Mat* image  = static_cast<cv::Mat *>(param);
-			drawBox(start, boxend, *image);
-			coordinates[2] = boxend.x-start.x;
-			coordinates[3] = boxend.y-start.y;
+			drawBox(start, boxend, *image); // was drawBox(start, boxend, *image)
+			temp_coord[2] = boxend.x-start.x;
+			temp_coord[3] = boxend.y-start.y;
+			
+			coordinates[0] = temp_coord[0];
+			coordinates[1] = temp_coord[1];
+			coordinates[2] = temp_coord[2];
+			coordinates[3] = temp_coord[3];
+			
+			max_radius = 40;
+                        max_radius_slider = 40;
+                        max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+50;
+
+                        // Min radius
+                        min_radius = 20;
+                        min_radius_slider = 20;
+                        min_radius_slider_max = max_radius_slider_max-1;
+			//coordinates[2] = boxend.x-start.x;
+			//coordinates[3] = boxend.y-start.y;
 	        	return;
     		}
 	}
@@ -327,8 +365,10 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		        isDrawing = true;
 			start.x = x;
 		        start.y = y;
-			coordinates[0] = start.x;
-			coordinates[1] = start.y;
+			temp_coord[0] = start.x;
+			temp_coord[1] = start.y;
+			//coordinates[0] = start.x;
+			//coordinates[1] = start.y;
         		return;
     		}
 	}
@@ -402,6 +442,25 @@ void save_csv_trackbar(int,void*){
 
 void stream_data_trackbar(int,void*){
 	stream_data = (int) stream_data_slider;
+}
+
+void orientation_trackbar(int,void*){
+	orientation = (int) orientation_slider;
+}
+
+void centerx_trackbar(int,void*){
+	int dist = coordinates[2]-coordinates[0];
+	coordinates[0] = centerX - cvRound(0.5*dist);
+	coordinates[2] = coordinates[0] + dist;
+	//Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
+        offset[0] = coordinates[0];
+}
+
+void centery_trackbar(int,void*){
+	int dist = coordinates[3] - coordinates[1];
+	coordinates[1] = centerY - cvRound(0.5*dist);
+	coordinates[3] = coordinates[1] + dist;
+	offset[1] = coordinates[1];
 }
 
 // Main function:
@@ -683,6 +742,7 @@ int main(){
 	Image tmpImage;
 	Image rgbTmp;
 	cv::Mat tmp;
+	RUNNING = 0;
 	while(kb != 'c'){
 		// Grab frame from buffer
 		Error error = camera.RetrieveBuffer(&tmpImage);
@@ -704,7 +764,7 @@ int main(){
 		imshow("set",tmp);
 	
 	        cvSetMouseCallback("set", mouseEvent, &tmp);
-		if (coordinates[3] != '\0'){
+		if (temp_coord[3] != '\0'){
 			drawBox(start, boxend, tmp);
 			imshow("set",tmp);
 		}
@@ -751,13 +811,13 @@ int main(){
 	center_threshold_slider = 10;
 	
 	// Max radius
-	max_radius = 140;
-	max_radius_slider = 100;
-	max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+100;
+	max_radius = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+50;
+	max_radius_slider = 50;
+	max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+50;
 
 	// Min radius
-	min_radius = 50;
-	min_radius_slider = 50;
+	min_radius = 10;
+	min_radius_slider = 10;
 	min_radius_slider_max = max_radius_slider_max-1;
 
 	// Binary threshold
@@ -779,10 +839,15 @@ int main(){
 	rec_slider = 0;
 	rec_slider_max = 1;
 	
+	orientation = 0;
+	orientation_slider = 0;
+	orientation_slider_max = 1;
+
+	centerx_slider = 0;
+	centery_slider = 0;
 	// Set up window with ROI and offset
 	Mat window;
 	Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
-	Vec<float,2> offset;
 	offset[0] = coordinates[0];
 	offset[1] = coordinates[1];
 	
@@ -817,7 +882,9 @@ int main(){
 	createTrackbar("Bin Threshold", "control", &bin_threshold_slider, bin_threshold_slider_max, bin_threshold_trackbar);
 	createTrackbar("Display Video","control",&video_display_slider, video_display_slider_max, video_display_trackbar);
 	createTrackbar("Record","control",&rec_slider,rec_slider_max,rec_trackbar);
-	
+	createTrackbar("Orientation","control",&orientation_slider,orientation_slider_max,orientation_trackbar);
+	createTrackbar("center-x","control",&centerx_slider,1,centerx_trackbar);
+	createTrackbar("center-y","control",&centery_slider,1,centery_trackbar);
 	sw.Start(); // start timer
 	char key = 0;
 	
@@ -829,7 +896,8 @@ int main(){
         //float xmax = 1280;
         //float ymax = 960;
 
-
+	RUNNING=1;
+	
 	// This is the main loop for the function
 	while(key != 'q'){
 		
@@ -850,7 +918,8 @@ int main(){
 		// convert to gray	
 		Mat image_gray;
 		image_gray = image(myROI);
-		
+		xmax = image_gray.rows;
+		ymax = image_gray.cols;
 		// Pre-process
 		cvtColor( image_gray, image_gray, CV_BGR2GRAY);
 		blur(image_gray,image_gray,Size(med_blur,med_blur));
@@ -867,8 +936,8 @@ int main(){
 		float x=0;
 		float y=0;
 		float r=0;
-		float centerX;
-		float centerY;
+		//float centerX;
+		//float centerY;
 		
 		if (circles.size()>0){
 			for( size_t i=0; i< circles.size(); i++)
@@ -900,9 +969,13 @@ int main(){
 
 		//xpos = (centerX/xmax)*amplitude_x+fudge_x;
 		//ypos = (centerY/ymax)*amplitude_y+fudge_y;
-	
-		xpos = (centerX/xmax)*(double)maxdata_x;
-		ypos = (centerY/ymax)*(double)maxdata_y;
+		if (orientation == 1){	
+			xpos = (1-(centerX/xmax))*(double)maxdata_x; // invert the x
+			ypos = (centerY/ymax)*(double)maxdata_y;
+		}else{
+			xpos = (centerX/xmax)*(double)maxdata_x;
+			ypos = (1-(centerY/ymax))*(double)maxdata_y;
+		}
 		
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //for(i=0; i<sizeof(datax); i++){
@@ -959,8 +1032,16 @@ int main(){
 
 		if (video_display==1 or save_csv==1){
 			if (video_display==1){
+				cvSetMouseCallback("filtered",mouseEvent,&image_gray);
+				if(coordinates[3]!='\0'){
+					drawBox(start,boxend,image_gray);
+				}
 				imshow("window",image);
 				imshow("filtered",image_gray);
+				Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
+        			offset[0] = coordinates[0];
+        			offset[1] = coordinates[1];
+
 			}
 		}
 		
