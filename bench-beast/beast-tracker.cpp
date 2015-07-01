@@ -126,8 +126,6 @@ int comedi_internal_trigger_cust(comedi_t* device, int subdevice, int channelx, 
   
   il.n_insns=2;
   il.insns=insn;
-  //lsampl_t datax[SAMPLE_CT];
-  //lsampl_t datay[SAMPLE_CT];
 
   memset(&insn[0], 0, sizeof(comedi_insn));
   insn[0].insn = INSN_WRITE; //INSN_INTTRIG
@@ -357,8 +355,6 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
                         min_radius_slider = 20;
                         min_radius_slider_max = max_radius_slider_max-1;
 			DRAWING = 0;
-			//coordinates[2] = boxend.x-start.x;
-			//coordinates[3] = boxend.y-start.y;
 	        	return;
     		}
 	}
@@ -454,16 +450,15 @@ void orientation_trackbar(int,void*){
 
 void centerx_trackbar(int,void*){
 	int dist = coordinates[2]-coordinates[0];
-	coordinates[0] = centerX - cvRound(0.5*dist);
+	coordinates[0] = centerX - cvFloor(0.5*dist + offset[0]);
 	coordinates[2] = coordinates[0] + dist;
-	//Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
         offset[0] = coordinates[0];
 	centerx_slider = 0;
 }
 
 void centery_trackbar(int,void*){
 	int dist = coordinates[3] - coordinates[1];
-	coordinates[1] = centerY - cvRound(0.5*dist);
+	coordinates[1] = centerY - cvFloor(0.5*dist + offset[1]);
 	coordinates[3] = coordinates[1] + dist;
 	offset[1] = coordinates[1];
 	centery_slider = 0;
@@ -799,8 +794,6 @@ int main(){
 		float x=0;
 		float y=0;
 		float r=0;
-		//float centerX;
-		//float centerY;
 		
 		if (circles.size()>0){
 			for( size_t i=0; i< circles.size(); i++)
