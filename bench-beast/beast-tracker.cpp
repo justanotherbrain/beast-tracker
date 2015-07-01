@@ -50,6 +50,10 @@ float centerX = 0;
 float centerY = 0;
 int RUNNING = 0;
 int DRAWING = 0;
+int center_offset_x = 0;
+int center_offset_y = 0;
+int max_rngx;
+int max_rngy;
 
 
 Vec<float,2> offset; 
@@ -280,6 +284,14 @@ int centerx = 0;
 int centery_slider = 0;
 int centery = 0;
 
+int offsetx_slider_max = 20;
+int offsetx_slider = cvFloor(offsetx_slider_max*0.5);
+int offsetx = 0;
+
+int offsety_slider_max = 20;
+int offsety_slider = cvFloor(offsety_slider_max*0.5);
+int offsety = 0;
+
 int video_display_slider_max = 1;
 int video_display_slider;
 int video_display;
@@ -354,7 +366,7 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
                         min_radius = 20;
                         min_radius_slider = 20;
                         min_radius_slider_max = max_radius_slider_max-1;
-			DRAWING = 0;
+			DRAWING = 1;
 	        	return;
     		}
 	}
@@ -368,7 +380,7 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 			temp_coord[1] = start.y;
 			//coordinates[0] = start.x;
 			//coordinates[1] = start.y;
-			DRAWING = 1;
+			DRAWING = 0;
         		return;
     		}
 	}
@@ -449,19 +461,31 @@ void orientation_trackbar(int,void*){
 }
 
 void centerx_trackbar(int,void*){
-	int dist = coordinates[2]-coordinates[0];
-	coordinates[0] = centerX - cvFloor(0.5*dist + offset[0]);
-	coordinates[2] = coordinates[0] + dist;
-        offset[0] = coordinates[0];
-	centerx_slider = 0;
+	//int dist = coordinates[2]-coordinates[0];
+	//coordinates[0] = centerX - cvFloor(0.5*dist);
+	//coordinates[2] = coordinates[0] + dist;
+        //offset[0] = coordinates[0];
+	//centerx_slider = 0;
+	//center_offset_x = centerX - cvFloor(0.5*dist);
+	center_offset_x = xpos - cvFloor(0.5*max_rngx); 
 }
 
 void centery_trackbar(int,void*){
-	int dist = coordinates[3] - coordinates[1];
-	coordinates[1] = centerY - cvFloor(0.5*dist + offset[1]);
-	coordinates[3] = coordinates[1] + dist;
-	offset[1] = coordinates[1];
-	centery_slider = 0;
+	//int dist = coordinates[3] - coordinates[1];
+	//coordinates[1] = centerY - cvFloor(0.5*dist);
+	//coordinates[3] = coordinates[1] + dist;
+	//offset[1] = coordinates[1];
+	//centery_slider = 0;
+	//center_offset_y = ypos - cvFloor(0.5*dist);
+	center_offset_y = ypos - cvFloor(0.5*max_rngy);
+}
+
+void offsetx_trackbar(int,void*){
+	offsetx = (int) offsetx_slider - cvFloor(offsetx_slider_max*0.5);
+}
+
+void offsety_trackbar(int,void*){
+	offsety = (int) offsety_slider - cvFloor(offsety_slider_max*0.5);
 }
 
 // Main function:
@@ -524,10 +548,11 @@ int main(){
         
 	maxdata_x = comedi_get_maxdata(devx, subdevicex, channelx);
         rng_x = comedi_get_range(devx, subdevicex, channelx, 0);
-        
+        max_rngx = maxdata_x;
+	 
 	maxdata_y = comedi_get_maxdata(devy, subdevicey, channely);
         rng_y = comedi_get_range(devy, subdevicey, channely, 0);
-	
+	max_rngy = maxdata_y;	
 	// initialize timer rec
 	double delay;
 	CStopWatch sw;
@@ -745,6 +770,8 @@ int main(){
 	createTrackbar("Orientation","control",&orientation_slider,orientation_slider_max,orientation_trackbar);
 	createTrackbar("center-x","control",&centerx_slider,1,centerx_trackbar);
 	createTrackbar("center-y","control",&centery_slider,1,centery_trackbar);
+	createTrackbar("offset-x","control",&offsetx_slider,offsetx_slider_max,offsetx_trackbar);
+	createTrackbar("offset_y","control",&offsety_slider,offsety_slider_max,offsety_trackbar);
 	sw.Start(); // start timer
 	char key = 0;
 	
@@ -776,8 +803,8 @@ int main(){
 		// convert to gray	
 		Mat image_gray;
 		image_gray = image(myROI);
-		xmax = image_gray.rows;
-		ymax = image_gray.cols;
+		xmax = image_gray.cols;
+		ymax = image_gray.rows;
 		// Pre-process
 		cvtColor( image_gray, image_gray, CV_BGR2GRAY);
 		blur(image_gray,image_gray,Size(med_blur,med_blur));
@@ -830,7 +857,10 @@ int main(){
 			xpos = (centerX/xmax)*(double)maxdata_x;
 			ypos = (1-(centerY/ymax))*(double)maxdata_y;
 		}
-		
+	
+		xpos = xpos - center_offset_x + offsetx;
+		ypos = ypos - center_offset_y + offsety;
+	
                 n = SAMPLE_CT * sizeof(sampl_t);
                 //for(i=0; i<sizeof(datax); i++){
                 for (i=0; i<SAMPLE_CT; i++){
@@ -858,7 +888,7 @@ int main(){
 
 		if (video_display==1 or save_csv==1){
 			if (video_display==1){
-				cvSetMouseCallback("filtered",mouseEvent,&image_gray);
+				//cvSetMouseCallback("filtered",mouseEvent,&image_gray);
 				//if(coordinates[3]!='\0'){
 				if (DRAWING == 1){
 					drawBox(start,boxend,image_gray);
