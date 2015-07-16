@@ -308,6 +308,10 @@ int stream_data_slider_max = 1;
 int stream_data_slider = 0;
 int stream_data = 0;
 
+int downsample_slider_max = 100;
+int downsample_slider = 1;
+int downsample = 1;
+
 bool isDrawing = false;
 Point start, boxend;
 
@@ -349,24 +353,9 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		        boxend.x = x;
 		        boxend.y = y;
 		        cv::Mat* image  = static_cast<cv::Mat *>(param);
-			drawBox(start, boxend, *image); // was drawBox(start, boxend, *image)
-			temp_coord[2] = boxend.x-start.x;
-			temp_coord[3] = boxend.y-start.y;
-			
-			coordinates[0] = temp_coord[0];
-			coordinates[1] = temp_coord[1];
-			coordinates[2] = temp_coord[2];
-			coordinates[3] = temp_coord[3];
-			
-			max_radius = 40;
-                        max_radius_slider = 40;
-                        max_radius_slider_max = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+50;
-
-                        // Min radius
-                        min_radius = 20;
-                        min_radius_slider = 20;
-                        min_radius_slider_max = max_radius_slider_max-1;
-			DRAWING = 1;
+			drawBox(start, boxend, *image); 
+			coordinates[2] = boxend.x-start.x;
+			coordinates[3] = boxend.y-start.y;
 	        	return;
     		}
 	}
@@ -376,11 +365,8 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		        isDrawing = true;
 			start.x = x;
 		        start.y = y;
-			temp_coord[0] = start.x;
-			temp_coord[1] = start.y;
-			//coordinates[0] = start.x;
-			//coordinates[1] = start.y;
-			DRAWING = 0;
+			coordinates[0] = start.x;
+			coordinates[1] = start.y;
         		return;
     		}
 	}
@@ -461,22 +447,10 @@ void orientation_trackbar(int,void*){
 }
 
 void centerx_trackbar(int,void*){
-	//int dist = coordinates[2]-coordinates[0];
-	//coordinates[0] = centerX - cvFloor(0.5*dist);
-	//coordinates[2] = coordinates[0] + dist;
-        //offset[0] = coordinates[0];
-	//centerx_slider = 0;
-	//center_offset_x = centerX - cvFloor(0.5*dist);
 	center_offset_x = xpos - cvFloor(0.5*max_rngx); 
 }
 
 void centery_trackbar(int,void*){
-	//int dist = coordinates[3] - coordinates[1];
-	//coordinates[1] = centerY - cvFloor(0.5*dist);
-	//coordinates[3] = coordinates[1] + dist;
-	//offset[1] = coordinates[1];
-	//centery_slider = 0;
-	//center_offset_y = ypos - cvFloor(0.5*dist);
 	center_offset_y = ypos - cvFloor(0.5*max_rngy);
 }
 
@@ -486,6 +460,16 @@ void offsetx_trackbar(int,void*){
 
 void offsety_trackbar(int,void*){
 	offsety = (int) offsety_slider - cvFloor(offsety_slider_max*0.5);
+}
+
+void downsample_trackbar(int, void*){
+	downsample = (int) downsample_slider;
+	/*
+	if (downsample==0){
+		downsample=1;
+		downsample_slider=1;
+	}
+	*/
 }
 
 // Main function:
@@ -516,13 +500,8 @@ int main(){
         int buffer_length;
         subdevicex = -1;
 	subdevicey = -1;
-        /* n_chan = -1; */
-
-        /* Use n_chan to select waveform (cheat!) */
-        /* fn = n_chan; */
-
-        /* Force n_chan to be 1 */
-        n_chan = 2;
+        
+	n_chan = 2;
 
         devx = comedi_open(comdevice);
 	devy = comedi_open(comdevice2);
@@ -648,8 +627,7 @@ int main(){
 		imshow("set",tmp);
 	
 	        cvSetMouseCallback("set", mouseEvent, &tmp);
-		//if (temp_coord[3] != '\0'){
-		if(DRAWING==1){
+		if (temp_coord[3] != '\0'){
 			drawBox(start, boxend, tmp);
 			imshow("set",tmp);
 		}
@@ -667,13 +645,17 @@ int main(){
 	else{
 		if (coordinates[0] > coordinates[2]){
 			int hold = coordinates[0];
-			coordinates[0] = coordinates[2]+coordinates[0];
-			coordinates[2] = hold+coordinates[0];
+			//coordinates[0] = coordinates[2]+coordinates[0];
+			//coordinates[2] = hold+coordinates[0];
+			coordinates[0] = coordinates[2];
+			coordinates[2] = hold;
 		}
 		if (coordinates[1] > coordinates[3]){
 			int hold = coordinates[1];
-			coordinates[1] = coordinates[3]+coordinates[1];
-			coordinates[3] = hold+coordinates[1];
+			//coordinates[1] = coordinates[3]+coordinates[1];
+			//coordinates[3] = hold+coordinates[1];
+			coordinates[1] = coordinates[3];
+			coordinates[3] = hold;
 		}
 	}
 	destroyWindow("set");
@@ -770,8 +752,9 @@ int main(){
 	createTrackbar("Orientation","control",&orientation_slider,orientation_slider_max,orientation_trackbar);
 	createTrackbar("center-x","control",&centerx_slider,1,centerx_trackbar);
 	createTrackbar("center-y","control",&centery_slider,1,centery_trackbar);
-	createTrackbar("offset-x","control",&offsetx_slider,offsetx_slider_max,offsetx_trackbar);
-	createTrackbar("offset_y","control",&offsety_slider,offsety_slider_max,offsety_trackbar);
+	//createTrackbar("offset-x","control",&offsetx_slider,offsetx_slider_max,offsetx_trackbar);
+	//createTrackbar("offset_y","control",&offsety_slider,offsety_slider_max,offsety_trackbar);
+	createTrackbar("downsample","control",&downsample_slider,downsample_slider_max,downsample_trackbar);
 	sw.Start(); // start timer
 	char key = 0;
 	
@@ -832,7 +815,8 @@ int main(){
 		
 			centerX=cvFloor(x/circles.size()+offset[0]);
 			centerY=cvFloor(y/circles.size()+offset[1]);
-		
+			
+			
 			Point center(cvRound(centerX), cvRound(centerY));
 			
 			if (video_display==1){
@@ -848,21 +832,27 @@ int main(){
 			centerX = 0;
 			centerY = 0;
 		}	
-		
-
+		// center voltage
+		centerX = centerX + offsetx;
+		centerY = centerY + offsety;
 		if (orientation == 1){	
-			xpos = (1-(centerX/xmax))*(double)maxdata_x; // invert the x
-			ypos = (centerY/ymax)*(double)maxdata_y;
+			xpos = (1-(centerX/(xmax+offsetx + downsample)))*(double)maxdata_x; // invert the x
+			ypos = (centerY/(ymax+offsety + downsample))*(double)maxdata_y;
+			// was (centerY/ymax)
 		}else{
-			xpos = (centerX/xmax)*(double)maxdata_x;
-			ypos = (1-(centerY/ymax))*(double)maxdata_y;
+			xpos = (centerX/(xmax+offsetx + downsample))*(double)maxdata_x;
+			ypos = (1-(centerY/(ymax+offsety + downsample)))*(double)maxdata_y;
 		}
 	
-		xpos = xpos - center_offset_x + offsetx;
-		ypos = ypos - center_offset_y + offsety;
-	
+		
+		xpos = xpos - center_offset_x;
+		ypos = ypos - center_offset_y;
+		
+		//downsampling
+		//xpos = floor(xpos/downsample)*downsample;
+		//ypos = floor(ypos/downsample)*downsample;
+			
                 n = SAMPLE_CT * sizeof(sampl_t);
-                //for(i=0; i<sizeof(datax); i++){
                 for (i=0; i<SAMPLE_CT; i++){
 			dataxl[i] = xpos;
 			datayl[i] = ypos;
@@ -888,23 +878,10 @@ int main(){
 
 		if (video_display==1 or save_csv==1){
 			if (video_display==1){
-				//cvSetMouseCallback("filtered",mouseEvent,&image_gray);
-				//if(coordinates[3]!='\0'){
-				if (DRAWING == 1){
-					drawBox(start,boxend,image_gray);
-				}
 				imshow("window",image);
 				imshow("filtered",image_gray);
-				//Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
-        			offset[0] = coordinates[0];
-        			offset[1] = coordinates[1];
-
 			}
 		}
-		
-		Rect myROI(coordinates[0],coordinates[1],coordinates[2],coordinates[3]);
-		
-		
 		
 		key = waitKey(1);
 		sw.Start(); // restart timer
