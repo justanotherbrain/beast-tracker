@@ -308,7 +308,7 @@ int stream_data_slider_max = 1;
 int stream_data_slider = 0;
 int stream_data = 0;
 
-int downsample_slider_max = 100;
+int downsample_slider_max = 1000;
 int downsample_slider = 1;
 int downsample = 1;
 
