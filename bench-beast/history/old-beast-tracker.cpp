@@ -31,6 +31,8 @@
 #include <sys/mman.h>
 #include <cstdlib>
 #include <cmath>
+//#include "eye_tracker_config.h"
+
 #include <netdb.h>
 
 
@@ -38,7 +40,6 @@ using namespace FlyCapture2;
 using namespace cv;
 using namespace std;
 
-// Initialize 
 comedi_t *devx;
 comedi_t *devy;
 #define SAMPLE_CT 5 // about as short as you can get
@@ -48,6 +49,8 @@ comedi_t *devy;
 // extra feature crap
 float centerX = 0;
 float centerY = 0;
+int RUNNING = 0;
+int DRAWING = 0;
 int center_offset_x = 0;
 int center_offset_y = 0;
 int max_rngx;
@@ -73,6 +76,10 @@ const char *comdevice = COMEDI_DEVICE_AO;
 const char *comdevice2 = COMEDI_DEVICE_AO;
 
 int external_trigger_number = 0;
+
+sampl_t datall[2][SAMPLE_CT];
+sampl_t datax[SAMPLE_CT];
+sampl_t datay[SAMPLE_CT];
 
 lsampl_t dataxl[SAMPLE_CT];
 lsampl_t datayl[SAMPLE_CT];
@@ -116,7 +123,6 @@ char *cmd_src(int src,char *buf)
 }
 
 
-// Comedi script for 2 channel analog output
 int comedi_internal_trigger_cust(comedi_t* device, int subdevice, int channelx, int channely, lsampl_t* dataxl, lsampl_t* datayl, int range, int aref)
 {
    
@@ -177,7 +183,6 @@ void dump_cmd(FILE *out,comedi_cmd *cmd)
 // tcpclient:
 // A class that creates a socket to allow communication between machines
 // This allows streaming data to another machine
-// KEEP THIS AROUND FOR YOUR OWN GOOD!
 class tcpclient{
 private:
 	int status;
@@ -209,6 +214,9 @@ public:
 		status = connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen);
 		if (status == -1) std::cout << "Connect error";
 	}
+
+
+	
 };
 
 // CStopWatch:
@@ -235,11 +243,17 @@ Vec<int,4> coordinates;
 Vec<int,4> temp_coord;
 float tracking_params[] = {0, 0, 0, 0};
 
+int min_dist_slider_max = 100;
+int min_dist_slider;
 int min_dist;
 
-int center_threshold;
-
+int canny_threshold_slider_max = 255;
+int canny_threshold_slider;
 int canny_threshold;
+
+int center_threshold_slider_max = 255;
+int center_threshold_slider;
+int center_threshold;
 
 int min_radius_slider_max = 99;
 int min_radius_slider;
@@ -319,7 +333,11 @@ const std::string currentDateTime() {
 // drawBox:
 // A simple drawing function that draws a box around the ROI during setup
 void drawBox(Point start, Point boxend, Mat& img){
-	imshow("set",img);
+	if (RUNNING == 0){
+		imshow("set",img);
+	} else {
+		imshow("filtered",img);
+	}
 	Scalar color = (255,0,0);
 	rectangle(img, start, boxend, color, 10, 8, 0);
 	return;
@@ -358,6 +376,27 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 
 
 // Initialize Trackbars
+void min_dist_trackbar(int, void*){
+	if (min_dist_slider==0){
+		min_dist_slider=1;
+	}
+	min_dist = (int) min_dist_slider;
+}
+
+void canny_threshold_trackbar(int, void*){
+	if (canny_threshold_slider==0){
+		canny_threshold_slider=1;
+	}
+	canny_threshold = (int) canny_threshold_slider;
+}
+
+void center_threshold_trackbar(int, void*){
+	if (center_threshold_slider==0){
+		center_threshold_slider=1;
+	}
+	center_threshold = (int) center_threshold_slider;
+}
+
 void min_radius_trackbar(int, void*){
 	if (min_radius_slider==0){
 		min_radius_slider=1;
@@ -567,6 +606,7 @@ int main(){
 	Image tmpImage;
 	Image rgbTmp;
 	cv::Mat tmp;
+	RUNNING = 0;
 	while(kb != 'c'){
 		// Grab frame from buffer
 		Error error = camera.RetrieveBuffer(&tmpImage);
@@ -628,12 +668,15 @@ int main(){
 	
 	// Min Dist
 	min_dist = 1;
+	min_dist_slider = 1;
 	
 	// Canny threshold
 	canny_threshold = 10;
+	canny_threshold_slider = 10;
 	
 	// Center threshold
 	center_threshold = 10;
+	center_threshold_slider = 10;
 	
 	// Max radius
 	max_radius = min(coordinates[2]-coordinates[0],coordinates[3]-coordinates[1])+50;
@@ -699,6 +742,9 @@ int main(){
 
 
 	// make sliders
+//	createTrackbar("Min Distance", "control", &min_dist_slider,min_dist_slider_max,min_dist_trackbar);
+//	createTrackbar("Canny Threshold", "control", &canny_threshold_slider, canny_threshold_slider_max, canny_threshold_trackbar);
+//	createTrackbar("Center Threshold", "control", &center_threshold_slider,center_threshold_slider_max, center_threshold_trackbar);
 	createTrackbar("Min Radius", "control", &min_radius_slider,min_radius_slider_max, min_radius_trackbar);
 	createTrackbar("Max Radius", "control", &max_radius_slider,max_radius_slider_max, max_radius_trackbar);
 	createTrackbar("Median blur", "control", &med_blur_slider, med_blur_slider_max, med_blur_trackbar);
@@ -708,6 +754,8 @@ int main(){
 	createTrackbar("Orientation","control",&orientation_slider,orientation_slider_max,orientation_trackbar);
 	createTrackbar("center-x","control",&centerx_slider,1,centerx_trackbar);
 	createTrackbar("center-y","control",&centery_slider,1,centery_trackbar);
+	//createTrackbar("offset-x","control",&offsetx_slider,offsetx_slider_max,offsetx_trackbar);
+	//createTrackbar("offset_y","control",&offsety_slider,offsety_slider_max,offsety_trackbar);
 	createTrackbar("downsample","control",&downsample_slider,downsample_slider_max,downsample_trackbar);
 	sw.Start(); // start timer
 	char key = 0;
@@ -716,6 +764,10 @@ int main(){
 	int iter = 0;
 
 
+	// initialize some more variables for comedi
+
+	RUNNING=1;
+	
 	// This is the main loop for the function
 	while(key != 'q'){
 		
@@ -754,8 +806,7 @@ int main(){
 		float x=0;
 		float y=0;
 		float r=0;
-	
-		// Circles algorithm	
+		
 		if (circles.size()>0){
 			for( size_t i=0; i< circles.size(); i++)
 			{
