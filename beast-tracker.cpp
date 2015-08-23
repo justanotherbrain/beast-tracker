@@ -332,6 +332,13 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		if(evt==CV_EVENT_LBUTTONUP){
 	    		printf("up %d %d\n",x,y);
 	        	isDrawing = false;
+	        	// check for ROI out of bounds
+	        	if(x > xmax){
+				x = xmax;
+			}
+			if(y> ymax){
+				y = ymax;
+			}
 		        boxend.x = x;
 		        boxend.y = y;
 		        cv::Mat* image  = static_cast<cv::Mat *>(param);
