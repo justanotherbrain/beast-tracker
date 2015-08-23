@@ -232,7 +232,6 @@ int max_solves_slider;
 int max_solves = 100;
 
 Vec<int,4> coordinates;
-Vec<int,4> temp_coord;
 float tracking_params[] = {0, 0, 0, 0};
 
 int min_dist;
@@ -588,7 +587,7 @@ int main(){
 		imshow("set",tmp);
 	
 	        cvSetMouseCallback("set", mouseEvent, &tmp);
-		if (temp_coord[3] != '\0'){
+		if (coordinates[3] != '\0'){
 			drawBox(start, boxend, tmp);
 			imshow("set",tmp);
 		}
