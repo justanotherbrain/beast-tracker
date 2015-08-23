@@ -232,7 +232,6 @@ int max_solves_slider;
 int max_solves = 100;
 
 Vec<int,4> coordinates;
-Vec<int,4> temp_coord;
 float tracking_params[] = {0, 0, 0, 0};
 
 int min_dist;
@@ -333,6 +332,13 @@ void mouseEvent(int evt, int x, int y, int flags, void* param){
 		if(evt==CV_EVENT_LBUTTONUP){
 	    		printf("up %d %d\n",x,y);
 	        	isDrawing = false;
+	        	// check for ROI out of bounds
+	        	if(x > xmax){
+				x = xmax;
+			}
+			if(y> ymax){
+				y = ymax;
+			}
 		        boxend.x = x;
 		        boxend.y = y;
 		        cv::Mat* image  = static_cast<cv::Mat *>(param);
@@ -588,7 +594,7 @@ int main(){
 		imshow("set",tmp);
 	
 	        cvSetMouseCallback("set", mouseEvent, &tmp);
-		if (temp_coord[3] != '\0'){
+		if (coordinates[3] != '\0'){
 			drawBox(start, boxend, tmp);
 			imshow("set",tmp);
 		}
